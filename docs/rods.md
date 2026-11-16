@@ -1,6 +1,6 @@
 # Rods
 
-Everything in the [model](model.md) up to here concerns cones. Cones are the right story in daylight, when rods are saturated or swamped, but they are only half of it in dim light. This document covers what rods add, what Dichromascope models (step A, rods in the brightness channel) and what it deliberately does not model (step B, rods as a third colour dimension).
+Everything in the [model](model.md) up to here concerns cones. Cones are the right story in daylight, when rods are saturated or swamped, but they are only half of it in dim light. This document covers what rods add, what Dichromascope models (step A, rods in the brightness channel) and why it does not model rods as a third colour dimension (step B).
 
 ## Three regimes
 
@@ -9,7 +9,7 @@ Human vision is conventionally divided into photopic (cones), mesopic (rods and 
 | Regime | Receptors | Colour dimensions possible | What Dichromascope shows |
 |---|---|---|---|
 | Daylight | Two cone classes (rods saturated) | 1 chromatic + brightness | Full colour sheet |
-| Dusk | Two cone classes + rods | Up to 2 chromatic + brightness | Fading colour; brightness increasingly from rods |
+| Dusk | Two cone classes + rods | 1 chromatic + brightness (rods add to brightness; no evidence of a rod colour channel in these species) | Fading colour; brightness increasingly from rods |
 | Night | Rods only | Brightness only | Grey, with grain |
 
 ## Step A: rods in the brightness channel
@@ -51,15 +51,26 @@ With the default parameters, rods carry about 40% of brightness at 10 cd/m², ab
 - **Grain.** Lightness is re-matched to the display range at every light level, standing for light adaptation (Laughlin's principle again), so a dim scene is not simply shown dark. Re-matching alone would hide the fact that the animal distinguishes fewer grey levels in dim light. So each pixel's lightness gets noise with a standard deviation of 0.35 animal JNDs. In daylight (about 22 JNDs) this is below human threshold. At dusk it shows as grain. In starlight (1–2 JNDs) it dominates, which is roughly how dim vision feels.
 - **The colour exchange rate is fixed in daylight.** The colour axis is not re-matched at each light level, because that would stretch the shrinking colour range back to full saturation. Colour is matched at 3000 cd/m², and dimmer light then shows up as genuine desaturation.
 
-## Step B: rods as a third colour dimension (not implemented)
+## Step B: rods as a third colour dimension (not implemented, not supported)
 
-With three receptor classes active, a dusk dichromat is in principle a trichromat. It could compare rods against cones as well as cones against each other.
+With three receptor classes active, a dusk dichromat is in principle a trichromat. It could compare rods against cones as well as cones against each other. Dichromascope does not model this, because the evidence for these three species does not support it.
 
-There is precedent in humans. Red–green dichromats become partially trichromatic for large fields in dim light, which is attributed to rods feeding the red–green channel they otherwise underuse (Smith & Pokorny 1977). Normal trichromats show rod intrusion as hue shifts and broken colour matches, not as a new hue, because their three post-receptoral channels are already in use.
+**For:** a rod–cone colour channel does exist in at least one mammal. Joesch & Meister (2016) identified a mouse retinal ganglion cell type (J-RGC) that receives an OFF signal from UV-sensitive cones and an antagonistic ON signal from rods. That is a genuine rod–cone colour-opponent channel, and they note the human retina has the components for a similar circuit. In humans, red–green dichromats become partially trichromatic for large fields in dim light, attributed to rods (Smith & Pokorny 1977). But mice are not among our species, and a systematic survey of mouse ganglion cells found rod–cone opponency to be rare (Frontiers in Cellular Neuroscience, 2023).
 
-Whether cats, dogs or horses have a spare post-receptoral channel that rods could use is unknown. Two observations bear on it. Horses lose colour discrimination at the same light level as humans (Roth et al. 2008), so rods do not extend their colour vision below the cone limit, though that experiment could not detect an *extra* dimension at higher light levels. And cats need very large stimuli to discriminate colour at all (Loop & Bruce 1978), which resembles the human large-field effect. That resemblance is suggestive, nothing more.
+**Against, for the cat:**
+- Daw & Pearlman (1969) originally proposed that cat colour vision might be exactly this: rods compared against a single class of cone, at mesopic levels. Their follow-up behavioural study refuted the need for it. Cats still discriminated red from cyan with the coloured stimuli placed on a background bright enough to saturate the rods (Daw & Pearlman 1970). Cat colour vision is cone-based.
+- Recordings from cat optic-tract fibres under mesopic adaptation show mixed rod and cone input to nearly all cells, with spectral peaks shifting with the degree of rod contribution (Andrews & Hammond 1970). That is rods *adding* to cone signals, which Dichromascope already models as brightness pooling. It is not opponency.
+- In the most detailed cat ganglion-cell study, the only colour-opponent responses found were short-wavelength cones against the other mechanisms (Crocker et al. 1980). A mid-spectrum (about 500 nm) mechanism contributed to most receptive fields but was not reported as opponent.
 
-If implemented, step B would make the animal's colour space change dimension with light: one-dimensional at night, three-dimensional at dusk, two-dimensional in daylight. The dusk volume would need a three-dimensional embedding in human colour space. It is left as a possible clearly labelled speculative mode ([issue #1](https://github.com/Matt-Rose/Dichromascope/issues/1)).
+**Against, for dog and horse:** no evidence either way was found. Horses lose colour discrimination at the same light level as humans (Roth et al. 2008), so rods do not extend their colour vision below the cone limit.
+
+**The general picture:** a review of colour vision in dim light concludes that rod–cone interactions have not been shown to improve colour vision in dim light, but may contribute to it at mesopic levels (Kelber, Yovanovich & Olsson 2017).
+
+**Conclusion:** no third colour dimension at dusk. If evidence for rod–cone opponency in cats, dogs or horses appears, the model's structure would accommodate it: the dimensionality of the animal's space would change with light, one-dimensional at night, three at dusk, two in daylight.
+
+### A useful side-finding
+
+Daw & Pearlman (1969) also report that, with pupils dilated, background luminances of 10–30 cd/m² saturated the cat's rod system. Under natural pupils the retina receives less light, so saturation would occur at a higher scene luminance. The 100 cd/m² default is therefore plausible for cats. Loop, Millican & Thomas (1987) found cats most sensitive at 497 nm (rods) for large increments on backgrounds up to 3 cd/m². The model has rods carrying 86% of the cat's brightness at 1 cd/m² and about 40% at 10 cd/m², which agrees reasonably.
 
 ## Limitations
 

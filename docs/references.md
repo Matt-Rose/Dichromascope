@@ -22,6 +22,11 @@ References are grouped by topic. Entries marked † were identified through abst
 
 ## Rods and dim light
 
+- Andrews, D. P. & Hammond, P. (1970). Suprathreshold spectral properties of single optic tract fibres in cat, under mesopic adaptation: cone–rod interaction. *Journal of Physiology*. † (volume and pages not checked)
+- Daw, N. W. & Pearlman, A. L. (1969). Cat colour vision: one cone process or several? *Journal of Physiology* 201, 745–764.
+- Daw, N. W. & Pearlman, A. L. (1970). Cat colour vision: evidence for more than one cone process. *Journal of Physiology* 211, 125–137.
+- Joesch, M. & Meister, M. (2016). A neuronal circuit for colour vision based on rod–cone opponency. *Nature* 532, 236–239.
+- Kelber, A., Yovanovich, C. & Olsson, P. (2017). Thresholds and noise limitations of colour vision in dim light. *Philosophical Transactions of the Royal Society B* 372, 20160065.
 - Aguilar, M. & Stiles, W. S. (1954). Saturation of the rod mechanism of the retina at high levels of stimulation. *Optica Acta* 1, 59–65.
 - Schwartz, S. H. (2009). *Visual Perception: A Clinical Orientation*, 4th edn. McGraw-Hill. Mesopic range figures. †
 - Sharpe, L. T., Fach, C., Nordby, K. & Stockman, A. (1989). The incremental threshold of the rod visual system and Weber's law. *Science* 244, 354–356.
@@ -54,7 +59,7 @@ References are grouped by topic. Entries marked † were identified through abst
 
 - Bisti, S. & Maffei, L. (1974). Behavioural contrast sensitivity of the cat in various visual meridians. *Journal of Physiology* 241, 201–210.
 - Campbell, F. W., Maffei, L. & Piccolino, M. (1973). The contrast sensitivity of the cat. *Journal of Physiology* 229, 719–731. † (pages)
-- Crocker, R. A. et al. (1980). Cone contributions to cat retinal ganglion cell receptive fields. *Journal of General Physiology* 76, 763–785. † (author list)
+- Crocker, R. A., Ringo, J., Wolbarsht, M. L. & Wagner, H. G. (1980). Cone contributions to cat retinal ganglion cell receptive fields. *Journal of General Physiology* 76, 763–785.
 - Guenther, E. & Zrenner, E. (1993). The spectral sensitivity of dark- and light-adapted cat retinal ganglion cells. *Journal of Neuroscience* 13, 1543–1550.
 - Kang, I., Reem, R. E., Kaczmarowski, A. L. & Malpeli, J. G. (2009). Contrast sensitivity of cats and humans in scotopic and mesopic conditions. *Journal of Neurophysiology* 102, 831–840.
 - Linberg, K. A., Lewis, G. P., Shaaw, C., Rex, T. S. & Fisher, S. K. (2001). Distribution of S- and M-cones in normal and experimentally detached cat retina. *Journal of Comparative Neurology* 430, 343–356.
