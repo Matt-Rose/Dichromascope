@@ -107,7 +107,7 @@ footer p { max-width: 90ch; margin: 0 0 6px; }
 </head>
 <body>
 <header>
-  <h1>Dichromascope Lab <a href="./" style="font-size:13px;font-weight:400;color:var(--muted);margin-left:8px">← back to viewer</a></h1>
+  <h1>Dichromascope Lab <a href="./" style="font-size:13px;font-weight:400;color:var(--muted);margin-left:8px">← back to viewer</a> <a href="https://github.com/Matt-Rose/Dichromascope#readme" target="_blank" rel="noopener" style="font-size:13px;font-weight:400;color:var(--muted);margin-left:8px">About</a></h1>
   <p class="lede">A dichromat's colour space is two-dimensional: one chromatic coordinate <b>c = ln(S/L)</b> plus luminance. Any rendering for a trichromat is therefore a 2-D sheet inside our 3-D colour space. Receptor noise fixes the sheet's intrinsic geometry: a flat strip in bright light, a cone with its apex at black where photon noise dominates, and positive curvature between the two. What remains free is how the sheet is bent into human colour space. The top controls set the physiology, the lower ones set the bending, and the stretch map shows where the bending distorts what the animal can tell apart.</p>
 </header>
 
@@ -199,7 +199,9 @@ const K = {"basis":[[0.32746,0.33186,0.34068],[0.32375,0.32969,0.34656],[0.31344
 // ---------- constants ----------
 const J = 0.02, EPS = 0.02, YMIN = 0.002, UMIN = Math.log(YMIN);
 const NC = 160, NU = 128;
-const SPECIES = { dog: { s: 429, l: 555, lens: 390 }, cat: { s: 450, l: 556, lens: 380 }, horse: { s: 428, l: 539, lens: 380 } };
+// Physiological parameters: edit species.json, then run tools/sync_species.py
+/*SPECIES-DATA-BEGIN*/ const SPECIES_DATA = {"cat": {"name": "Cat", "s": 450, "l": 556, "lens": 380, "eta": 0.15, "w": 0.05, "wY": 0.25, "Yfail": 0.02}, "dog": {"name": "Dog", "s": 429, "l": 555, "lens": 390, "eta": 0.11, "w": 0.05, "wY": 0.245, "Yfail": 0.02}, "horse": {"name": "Horse", "s": 428, "l": 539, "lens": 380, "eta": 0.17, "w": 0.05, "wY": 0.435, "Yfail": 0.02}}; /*SPECIES-DATA-END*/
+const SPECIES = SPECIES_DATA;
 
 // ---------- small linear algebra ----------
 function inv3(m) {
@@ -243,7 +245,7 @@ const sens = (w, lmax, lens) => nomo(w, lmax) / (1 + Math.exp(-(w - lens) / 8)) 
 function d65(w) { const x = (w - 340) / 5, i = Math.max(0, Math.min(K.d65.length - 2, Math.floor(x))), t = x - i; return K.d65[i] * (1 - t) + K.d65[i + 1] * t; }
 
 // ---------- state ----------
-const S = { lS: 450, lL: 556, lens: 380, w: 0.05, eta: 0.10, wY: 0.05, light: 3,
+const S = { lS: SPECIES.cat.s, lL: SPECIES.cat.l, lens: SPECIES.cat.lens, w: SPECIES.cat.w, eta: SPECIES.cat.eta, wY: SPECIES.cat.wY, light: 3,
             mode: "bell", span: 290, hL: 25, kc: 0, kY: -1.5, Lw: 0.93, Lb: 0.12, rev: false, auto: true, src: "scene" };
 
 const PHYS = [
@@ -251,7 +253,7 @@ const PHYS = [
   { id: "lL", label: "Long-cone λmax", min: 495, max: 575, step: 1, fmt: v => v + " nm" },
   { id: "w", label: "Weber fraction, long cone", min: 0.02, max: 0.2, step: 0.005, fmt: v => v.toFixed(3) },
   { id: "eta", label: "Short-cone share of cones", min: 0.03, max: 0.5, step: 0.01, fmt: v => Math.round(v * 100) + "%" },
-  { id: "wY", label: "Weber fraction, luminance", min: 0.02, max: 0.2, step: 0.005, fmt: v => v.toFixed(3) },
+  { id: "wY", label: "Weber fraction, luminance", min: 0.02, max: 0.6, step: 0.005, fmt: v => v.toFixed(3) },
   { id: "light", label: "Light level", min: -0.5, max: 5, step: 0.1, fmt: v => {
       const w = v < 0.5 ? "night" : v < 1.5 ? "dusk" : v < 3 ? "overcast" : "daylight";
       const p = 100 * Math.pow(10, -v); return `${w} · knee ${p >= 1 ? p.toFixed(0) : p.toPrecision(1)}% of white`; } },
@@ -654,7 +656,7 @@ function update() {
 buildSliders(document.getElementById("phys"), PHYS);
 buildSliders(document.getElementById("map"), MAP);
 document.getElementById("species").addEventListener("change", e => {
-  const sp = SPECIES[e.target.value]; if (sp) { S.lS = sp.s; S.lL = sp.l; S.lens = sp.lens; } schedule(); });
+  const sp = SPECIES[e.target.value]; if (sp) { S.lS = sp.s; S.lL = sp.l; S.lens = sp.lens; S.w = sp.w; S.eta = sp.eta; S.wY = sp.wY; } schedule(); });
 document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { S.mode = b.dataset.mode; schedule(); }));
 document.getElementById("rev").addEventListener("change", e => { S.rev = e.target.checked; schedule(); });
 document.getElementById("auto").addEventListener("change", e => { S.auto = e.target.checked; schedule(); });

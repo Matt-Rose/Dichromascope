@@ -1,0 +1,42 @@
+{
+  "_about": "Physiological parameters for Dichromascope. Source of truth: tools/sync_species.py copies the numeric values into index.html and lab.html. Grades: A = measured in this species, several animals, modern method; B = measured but few animals, older or indirect; C = derived from measured quantities via the model; D = assumed or borrowed from another species. See docs/parameters.md and docs/species/*.md for derivations and references.",
+  "human_reference": {
+    "colour_vision_limit_cd_m2": {"value": 0.02, "grade": "A", "source": "Roth, Balkenius & Kelber 2008 (humans tested in the horse apparatus)"},
+    "brightness_weber_fraction_task_matched": {"value": 0.14, "grade": "C", "source": "Value cited by Griebel and colleagues (2004) for humans in comparable grey-card tasks; original source not checked"}
+  },
+  "species": {
+    "cat": {
+      "name": "Cat",
+      "lambda_S_nm": {"value": 450, "grade": "B", "source": "Guenther & Zrenner 1993; ganglion-cell spectral sensitivity, 450 nm S-cone input"},
+      "lambda_L_nm": {"value": 556, "grade": "B", "range": [550, 556], "source": "Guenther & Zrenner 1993 (550 nm); Crocker et al. 1980 (556 nm)"},
+      "lens_cutoff_nm": {"value": 380, "grade": "D", "source": "Assumed; only affects wavelengths below ~400 nm"},
+      "S_cone_fraction": {"value": 0.15, "grade": "B", "range": [0.10, 0.20], "source": "Linberg et al. 2001: M/L cones 80-90% of cones"},
+      "weber_luminance": {"value": 0.25, "grade": "D", "source": "No large-field brightness Weber fraction found for cats; borrowed from dog (Griebel and colleagues 2004)"},
+      "weber_chromatic_L": {"value": 0.05, "grade": "D", "source": "Conventional receptor-noise default (Vorobyev & Osorio 1998 lineage); not measured in cats"},
+      "colour_limit_cd_m2": {"value": 0.02, "grade": "D", "source": "Assumed equal to horse and human (Roth et al. 2008)"},
+      "neutral_point_nm": {"model": 500, "behavioural": null, "note": "Cat colour discrimination needs stimuli >~20 deg (Loop & Bruce 1978; Loop, Bruce & Petuchowski 1979); no neutral-point measurement found"}
+    },
+    "dog": {
+      "name": "Dog",
+      "lambda_S_nm": {"value": 429, "grade": "A", "range": [429, 435], "source": "Neitz, Geist & Jacobs 1989; Jacobs et al. 1993 (430-435 nm)"},
+      "lambda_L_nm": {"value": 555, "grade": "A", "source": "Neitz, Geist & Jacobs 1989; Jacobs et al. 1993"},
+      "lens_cutoff_nm": {"value": 390, "grade": "D", "source": "Assumed"},
+      "S_cone_fraction": {"value": 0.11, "grade": "A", "range": [0.10, 0.18], "source": "Mowat et al. 2008: 9.9-11.9% in area centralis, 15-18% inferior periphery"},
+      "weber_luminance": {"value": 0.245, "grade": "B", "range": [0.22, 0.27], "source": "Griebel and colleagues 2004, J. Vision 4(3):10; three dogs"},
+      "weber_chromatic_L": {"value": 0.05, "grade": "D", "source": "Conventional receptor-noise default; not measured in dogs"},
+      "colour_limit_cd_m2": {"value": 0.02, "grade": "D", "source": "Assumed equal to horse and human (Roth et al. 2008)"},
+      "neutral_point_nm": {"model": 486, "behavioural": 480, "note": "Neitz, Geist & Jacobs 1989"}
+    },
+    "horse": {
+      "name": "Horse",
+      "lambda_S_nm": {"value": 428, "grade": "A", "source": "Carroll et al. 2001 (ERG flicker photometry)"},
+      "lambda_L_nm": {"value": 539, "grade": "A", "source": "Carroll et al. 2001"},
+      "lens_cutoff_nm": {"value": 380, "grade": "D", "source": "Assumed"},
+      "S_cone_fraction": {"value": 0.17, "grade": "B", "range": [0.10, 0.25], "source": "Sandmann et al. 1996: S cones 10-25% depending on location"},
+      "weber_luminance": {"value": 0.435, "grade": "B", "range": [0.42, 0.45], "source": "Geisbauer et al. 2004; two horses. Consistent with Macuda & Timney 1999 (chance below ~0.2 log units)"},
+      "weber_chromatic_L": {"value": 0.05, "grade": "D", "source": "Conventional receptor-noise default; not measured in horses"},
+      "colour_limit_cd_m2": {"value": 0.02, "grade": "B", "range": [0.02, 0.08], "source": "Roth, Balkenius & Kelber 2008; two horses, humans 0.02 in same apparatus"},
+      "neutral_point_nm": {"model": 480, "behavioural": 480, "note": "Geisbauer et al. 2004"}
+    }
+  }
+}

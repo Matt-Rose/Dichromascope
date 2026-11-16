@@ -66,9 +66,10 @@ a.lab { color: var(--muted); font-size: 12.5px; text-decoration: none; border-bo
   <label class="file" for="file">Photo or clip…</label>
   <input type="file" id="file" accept="image/*,video/*">
   <span class="sp"></span>
-  <button id="b-rate" type="button" title="Animal-to-human JND exchange rate: range-matched, or pinned 1:1 at a given human JND size">Rate: matched</button>
+  <button id="b-rate" type="button" title="Animal-to-human JND exchange rate: range-matched, or pinned 1:1 at a given human JND size">Matched</button>
   <button id="b-mode" type="button" aria-pressed="false" title="Show the literal blue–yellow rendering">Natural</button>
   <a class="lab" href="lab.html">Lab</a>
+  <a class="lab" href="https://github.com/Matt-Rose/Dichromascope#readme" target="_blank" rel="noopener">About</a>
 </div>
 
 <div class="cmp" id="cmp" hidden>original</div>
@@ -77,7 +78,7 @@ a.lab { color: var(--muted); font-size: 12.5px; text-decoration: none; border-bo
 <div class="dock">
   <div class="dials">
     <div class="dial" id="d-species" tabindex="0" role="slider" aria-label="Species"><canvas></canvas><span class="lbl">Species</span><span class="val"></span></div>
-    <div class="dial" id="d-light" tabindex="0" role="slider" aria-label="Light level"><canvas></canvas><span class="lbl">Light</span><span class="val"></span></div>
+    <div class="dial" id="d-light" tabindex="0" role="slider" aria-label="Light level, luminance of a white surface"><canvas></canvas><span class="lbl">Light</span><span class="val"></span></div>
     <div class="dial" id="d-adapt" tabindex="0" role="slider" aria-label="Adaptation"><canvas></canvas><span class="lbl">Adaptation</span><span class="val"></span></div>
     <div class="dial" id="d-hue" tabindex="0" role="slider" aria-label="Hue rotation"><canvas></canvas><span class="lbl">Hue</span><span class="val"></span></div>
   </div>
@@ -134,19 +135,16 @@ function d65(w) { const x = (w - 340) / 5, i = Math.max(0, Math.min(K.d65.length
 
 // ---------- physiology ----------
 const J = 0.02, EPS = 0.02, YMIN = 0.002, UMIN = Math.log(YMIN);
-const SPECIES = [
-  { name: "Cat", s: 450, l: 556, lens: 380 },
-  { name: "Dog", s: 429, l: 555, lens: 390 },
-  { name: "Horse", s: 428, l: 539, lens: 380 },
-];
-const NOISE = { w: 0.05, eta: 0.10, wY: 0.05 };   // placeholders, see issue #3
+// Physiological parameters: edit species.json, then run tools/sync_species.py
+/*SPECIES-DATA-BEGIN*/ const SPECIES_DATA = {"cat": {"name": "Cat", "s": 450, "l": 556, "lens": 380, "eta": 0.15, "w": 0.05, "wY": 0.25, "Yfail": 0.02}, "dog": {"name": "Dog", "s": 429, "l": 555, "lens": 390, "eta": 0.11, "w": 0.05, "wY": 0.245, "Yfail": 0.02}, "horse": {"name": "Horse", "s": 428, "l": 539, "lens": 380, "eta": 0.17, "w": 0.05, "wY": 0.435, "Yfail": 0.02}}; /*SPECIES-DATA-END*/
+const SPECIES = ["cat", "dog", "horse"].map(k => SPECIES_DATA[k]);
 const TAU = 1.0;                                    // adaptation time constant (s), rough
 const CLIP_TOL = 0.10;                              // fraction of the sheet allowed to clip
 const NB = 64;                                      // transfer-function bins per channel
 const NYc = 256, NYy = 128;                         // sheet colour table
 
 const S = { sp: 0, light: 3, adapt: 0.5, rot: 29, natural: false, rate: 0 };
-const RATES = [{ label: "Rate: matched" }, { label: "1:1 · J 0.02", J: 0.02 }, { label: "1:1 · J 0.01", J: 0.01 }];
+const RATES = [{ label: "Matched" }, { label: "1:1 · J 0.02", J: 0.02 }, { label: "1:1 · J 0.01", J: 0.01 }];
 
 function speciesModel() {
   const sp = SPECIES[S.sp];
@@ -163,8 +161,10 @@ function speciesModel() {
     const qs = Q[0][0]*rgb[0]+Q[0][1]*rgb[1]+Q[0][2]*rgb[2], ql = Q[1][0]*rgb[0]+Q[1][1]*rgb[1]+Q[1][2]*rgb[2];
     const c = Math.log((qs + EPS) / (ql + EPS)); clo = Math.min(clo, c); chi = Math.max(chi, c);
   }
-  const ec = Math.hypot(NOISE.w * Math.sqrt((1 - NOISE.eta) / NOISE.eta), NOISE.w), eY = NOISE.wY;
-  const Y0 = Math.pow(10, -S.light);
+  const ec = Math.hypot(sp.w * Math.sqrt((1 - sp.eta) / sp.eta), sp.w), eY = sp.wY;
+  // photon-noise knee from the colour-vision light limit: Y0 = (Tc^2 - 1) * Yfail  (docs/parameters.md)
+  const TcBright = (chi - clo) / ec, Y0abs = (TcBright * TcBright - 1) * sp.Yfail;
+  const Y0 = Y0abs / Math.pow(10, S.light);          // S.light = log10 of white luminance, cd/m2
   const Gu = u => 1 / Math.sqrt(1 + Y0 * Math.exp(-u));
   // luminance: long-term (range-matched) weights per bin, and cumulative for inverse lookup
   const wY = new Float64Array(NB), uB = i => UMIN + (-UMIN) * (i + 0.5) / NB;
@@ -174,7 +174,7 @@ function speciesModel() {
   const cum = new Float64Array(NB + 1); for (let i = 0; i < NB; i++) cum[i + 1] = cum[i] + wY[i];
   const gOfY = yY => { let i = 0; while (i < NB - 1 && cum[i + 1] < yY) i++; return Gu(uB(i)); };
   const Tc = (chi - clo) * Gu(0) / ec;
-  return { Q, clo, chi, ec, eY, Y0, Gu, wY, TY, Tc, gOfY };
+  return { Q, clo, chi, ec, eY, Y0, Y0abs, Gu, wY, TY, Tc, gOfY };
 }
 
 // ---------- gamut table and sheet fit ----------
@@ -503,9 +503,10 @@ function gauge(c, r, d, f, label) {
   c.strokeStyle = cssVar("--track"); c.beginPath(); c.arc(r, r, R, a0, a1); c.stroke();
   c.strokeStyle = cssVar("--ink"); c.beginPath(); c.arc(r, r, R, a0, a0 + f * (a1 - a0)); c.stroke();
   const a = a0 + f * (a1 - a0); c.fillStyle = cssVar("--ink"); c.beginPath(); c.arc(r + R * Math.cos(a), r + R * Math.sin(a), 5 * d, 0, 2 * Math.PI); c.fill();
-  c.fillStyle = cssVar("--ink"); c.font = `500 ${11 * d}px IBM Plex Mono, monospace`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(label, r, r);
+  c.fillStyle = cssVar("--ink"); c.font = `500 ${(label.length > 5 ? 9 : 11) * d}px IBM Plex Mono, monospace`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(label, r, r);
 }
-const lightWord = v => v < 0.5 ? "night" : v < 1.5 ? "dusk" : v < 3 ? "overcast" : "day";
+const lightWord = v => v >= 3.5 ? "sun" : v >= 2.5 ? "overcast" : v >= 1.5 ? "indoor" : v >= 0 ? "dusk" : v >= -1.3 ? "twilight" : "moon";
+function fmtLum(v) { const x = Math.pow(10, v); return x >= 1000 ? (x / 1000).toFixed(x >= 10000 ? 0 : 1) + "k" : x >= 1 ? x.toFixed(0) : x.toPrecision(1); }
 const dials = [
   new Dial("d-species", {
     get: () => S.sp, set: v => { S.sp = v; }, tap: (dir = 1) => { S.sp = (S.sp + dir + SPECIES.length) % SPECIES.length; dials[0].draw(); onChange(true); },
@@ -519,9 +520,9 @@ const dials = [
     },
   }),
   new Dial("d-light", {
-    min: 0, max: 5, step: 0.25, sweep: 1.5 * Math.PI, get: () => S.light, set: v => { S.light = v; },
-    disabled: () => S.natural, text: () => lightWord(S.light),
-    paint(c, r, d) { const p = 100 * Math.pow(10, -S.light); gauge(c, r, d, S.light / 5, (p >= 1 ? p.toFixed(0) : p.toPrecision(1)) + "%"); },
+    min: -2, max: 4.5, step: 0.25, sweep: 1.5 * Math.PI, get: () => S.light, set: v => { S.light = v; },
+    disabled: () => S.natural, text: () => fmtLum(S.light) + " cd/m²",
+    paint(c, r, d) { gauge(c, r, d, (S.light + 2) / 6.5, lightWord(S.light)); },
   }),
   new Dial("d-adapt", {
     min: 0, max: 1, step: 0.05, sweep: 1.5 * Math.PI, get: () => S.adapt, set: v => { S.adapt = v; },
