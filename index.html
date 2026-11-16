@@ -32,7 +32,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); 
 .bar .sp { flex: 1; }
 button, .file { font: 500 12.5px var(--font-body); color: var(--ink); background: var(--glass); border: 1px solid var(--line);
   border-radius: 999px; padding: 5px 11px; cursor: pointer; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+button[aria-pressed="true"], .file[data-active="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 button.primary { background: var(--ink); color: var(--bg); }
 a.lab { color: var(--muted); font-size: 12.5px; text-decoration: none; border-bottom: 1px solid var(--line); }
 #file { position: absolute; width: 1px; height: 1px; opacity: 0; }
@@ -59,10 +59,10 @@ a.lab { color: var(--muted); font-size: 12.5px; text-decoration: none; border-bo
 
 <div class="bar">
   <h1>Dichromascope</h1>
-  <button id="b-cam" type="button" class="primary">Camera</button>
+  <button id="b-cam" type="button" aria-pressed="false">Camera</button>
   <button id="b-flip" type="button" hidden>Flip</button>
-  <button id="b-scene" type="button">Toy scene</button>
-  <button id="b-chart" type="button">Hue chart</button>
+  <button id="b-scene" type="button" aria-pressed="true">Toy scene</button>
+  <button id="b-chart" type="button" aria-pressed="false">Hue chart</button>
   <label class="file" for="file">Photo or clip…</label>
   <input type="file" id="file" accept="image/*,video/*">
   <span class="sp"></span>
@@ -580,10 +580,14 @@ function onChange(full) {
 }
 
 // ---------- wiring ----------
-document.getElementById("b-cam").addEventListener("click", startCamera);
+function markSource(which) {   // which: "cam" | "scene" | "chart" | "file"
+  for (const k of ["cam", "scene", "chart"]) document.getElementById("b-" + k).setAttribute("aria-pressed", String(k === which));
+  document.querySelector("label.file").dataset.active = String(which === "file");
+}
+document.getElementById("b-cam").addEventListener("click", async () => { await startCamera(); if (live) markSource("cam"); });
 document.getElementById("b-flip").addEventListener("click", () => { facing = facing === "environment" ? "user" : "environment"; startCamera(); });
-document.getElementById("b-scene").addEventListener("click", () => setStill(sceneImage()));
-document.getElementById("b-chart").addEventListener("click", () => setStill(swatchImage()));
+document.getElementById("b-scene").addEventListener("click", () => { setStill(sceneImage()); markSource("scene"); });
+document.getElementById("b-chart").addEventListener("click", () => { setStill(swatchImage()); markSource("chart"); });
 document.getElementById("b-rate").addEventListener("click", e => {
   S.rate = (S.rate + 1) % RATES.length; e.currentTarget.textContent = RATES[S.rate].label;
   e.currentTarget.setAttribute("aria-pressed", String(S.rate > 0)); rebuild();
@@ -596,13 +600,13 @@ document.getElementById("file").addEventListener("change", e => {
   if (f.type.startsWith("video/")) {
     stopLive(); note("");
     vid.src = URL.createObjectURL(f);
-    vid.onloadeddata = () => { vid.play().then(startLoop).catch(err => note("Couldn't play that clip: " + err.name)); };
+    vid.onloadeddata = () => { vid.play().then(() => { startLoop(); markSource("file"); }).catch(err => note("Couldn't play that clip: " + err.name)); };
   } else {
     const img = new Image();
     img.onload = () => {
       const s = Math.min(1, Math.sqrt(400000 / (img.width * img.height))), w = Math.round(img.width * s), h = Math.round(img.height * s);
       wx.canvas.width = w; wx.canvas.height = h; wx.drawImage(img, 0, 0, w, h);
-      setStill(wx.getImageData(0, 0, w, h)); URL.revokeObjectURL(img.src);
+      setStill(wx.getImageData(0, 0, w, h)); markSource("file"); URL.revokeObjectURL(img.src);
     };
     img.src = URL.createObjectURL(f);
   }
