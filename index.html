@@ -2,205 +2,92 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Dichromascope</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* Layout: instrument panel. Controls in a left rail, views on the right; on phones the
-   image pair comes first, then controls, then the geometry views.
-   Chrome is strictly achromatic so it does not bias the colours being judged. */
+/* Layout: full-bleed viewer. The frame fills the screen; a thin source bar sits on top and a
+   dock of four ring dials sits at the bottom. Single dark, strictly achromatic theme so the
+   chrome never biases the colours being judged. */
 :root {
-  --bg: #dcdcdc;
-  --panel: #efefef;
-  --ink: #1a1a1a;
-  --muted: #5a5a5a;
-  --line: #c2c2c2;
-  --ok: #2c7a4b;
-  --warn: #a86400;
-  --bad: #b3261e;
+  --bg: #121212;
+  --glass: rgba(18, 18, 18, 0.66);
+  --ink: #ededed;
+  --muted: #a8a8a8;
+  --line: rgba(255, 255, 255, 0.2);
+  --track: rgba(255, 255, 255, 0.14);
   --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #2b2b2b; --panel: #353535; --ink: #ebebeb; --muted: #a3a3a3; --line: #4b4b4b;
-    --ok: #5fbf85; --warn: #e0a040; --bad: #ef6f66; color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #2b2b2b; --panel: #353535; --ink: #ebebeb; --muted: #a3a3a3; --line: #4b4b4b;
-  --ok: #5fbf85; --warn: #e0a040; --bad: #ef6f66; color-scheme: dark;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; }
-body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--font-body); }
-header { padding: 20px 20px 4px; max-width: 1280px; margin: 0 auto; }
-h1 { font-size: 22px; font-weight: 600; margin: 0 0 6px; text-wrap: balance; }
-h2 { font-size: 13px; font-weight: 600; margin: 0; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-.lede { max-width: 72ch; color: var(--muted); margin: 0; }
-.lede b { color: var(--ink); font-weight: 500; }
-main { max-width: 1280px; margin: 0 auto; padding: 16px 20px 28px; display: grid; gap: 16px;
-  grid-template-columns: 330px minmax(0, 1fr);
-  grid-template-areas: "ctrl img" "ctrl sum" "ctrl geo"; align-items: start; }
-#ctrl { grid-area: ctrl; position: sticky; top: 12px; }
-#img { grid-area: img; } #sum { grid-area: sum; } #geo { grid-area: geo; }
-@media (max-width: 860px) {
-  main { grid-template-columns: minmax(0, 1fr); grid-template-areas: "img" "sum" "ctrl" "geo"; }
-  #ctrl { position: static; }
-}
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 12px; }
-fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; min-width: 0; }
-fieldset[disabled] .row { opacity: .45; }
-.row { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: baseline; }
-.row label { font-size: 13px; }
-.row output { font: 12px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
-.row input[type=range] { grid-column: 1 / -1; width: 100%; margin: 0; accent-color: var(--ink); }
-.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; border: 1px solid var(--line); }
-select, .seg button, .src button, .src label { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; cursor: pointer; }
-select { width: 100%; }
-.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-.seg button { font-size: 12.5px; padding: 6px 4px; }
-.seg button[aria-pressed="true"], .src button[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
-.note { font-size: 12.5px; color: var(--muted); margin: 0; }
-.checks { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
-.checks label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
-.checks input { accent-color: var(--ink); }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.4 var(--font-body); overflow: hidden; }
+#stage { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: contain; background: var(--bg); touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.bar { position: fixed; top: 0; left: 0; right: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 12px) 8px calc(env(safe-area-inset-left) + 12px);
+  background: linear-gradient(var(--glass), rgba(18, 18, 18, 0)); }
+.bar h1 { font-size: 15px; font-weight: 600; margin: 0 8px 0 0; letter-spacing: .01em; }
+.bar .sp { flex: 1; }
+button, .file { font: 500 12.5px var(--font-body); color: var(--ink); background: var(--glass); border: 1px solid var(--line);
+  border-radius: 999px; padding: 5px 11px; cursor: pointer; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+button.primary { background: var(--ink); color: var(--bg); }
+a.lab { color: var(--muted); font-size: 12.5px; text-decoration: none; border-bottom: 1px solid var(--line); }
+#file { position: absolute; width: 1px; height: 1px; opacity: 0; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-@media (max-width: 520px) { .pair { grid-template-columns: 1fr; } }
-figure { margin: 0; display: grid; gap: 4px; min-width: 0; }
-figcaption { font-size: 12px; color: var(--muted); }
-canvas { display: block; width: 100%; height: auto; border-radius: 4px; background: #808080; }
-.src { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.fps { font: 11px var(--font-mono); color: var(--muted); margin-left: auto; }
-.src input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.strip { position: relative; }
-.strip canvas { height: 26px; image-rendering: auto; border-radius: 3px; }
-.strips { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: center; font-size: 12px; color: var(--muted); }
-.axis { display: flex; justify-content: space-between; font: 11px var(--font-mono); color: var(--muted); grid-column: 2; }
-.np { position: absolute; bottom: -6px; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 7px solid var(--ink); transform: translateX(-5px); }
-.chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-.chip { border: 1px solid var(--line); border-left-width: 4px; border-radius: 6px; padding: 7px 9px; background: var(--bg); }
-.chip .k { font-size: 11.5px; color: var(--muted); }
-.chip .v { font: 500 16px var(--font-mono); font-variant-numeric: tabular-nums; }
-.chip .s { font-size: 11.5px; color: var(--muted); }
-.chip[data-state=ok] { border-left-color: var(--ok); }
-.chip[data-state=warn] { border-left-color: var(--warn); }
-.chip[data-state=bad] { border-left-color: var(--bad); }
-.chip[data-state=info] { border-left-color: var(--line); }
-.geo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-@media (max-width: 700px) { .geo { grid-template-columns: 1fr; } }
-.space { display: grid; gap: 6px; }
-.space canvas { aspect-ratio: 160 / 96; image-rendering: pixelated; }
-.space .pair { grid-template-columns: 1fr 1fr; }
-.ax2 { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); }
-.legend { display: flex; align-items: center; gap: 8px; font: 11px var(--font-mono); color: var(--muted); }
-.legend span.bar { flex: 1; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #2563a8, #7aa6d6, #d6d6d6, #e8a06a, #b8441c); }
-#v3 { aspect-ratio: 1; cursor: grab; background: transparent; touch-action: none; }
-footer { max-width: 1280px; margin: 0 auto; padding: 0 20px 32px; color: var(--muted); font-size: 12.5px; }
-footer p { max-width: 90ch; margin: 0 0 6px; }
+.dock { position: fixed; left: 0; right: 0; bottom: 0; display: grid; gap: 6px; justify-items: center;
+  padding: 18px calc(env(safe-area-inset-right) + 10px) calc(env(safe-area-inset-bottom) + 10px) calc(env(safe-area-inset-left) + 10px);
+  background: linear-gradient(rgba(18, 18, 18, 0), var(--glass) 55%); pointer-events: none; }
+.dials { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; pointer-events: auto; }
+.dial { display: grid; justify-items: center; gap: 2px; width: 78px; cursor: grab; touch-action: none; border-radius: 12px; padding: 2px; }
+.dial[aria-disabled="true"] { opacity: .35; }
+.dial canvas { width: 72px; height: 72px; display: block; }
+.dial .lbl { font-size: 11.5px; color: var(--muted); }
+.dial .val { font: 12px var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.info { font: 11.5px var(--font-mono); color: var(--muted); text-align: center; max-width: 60ch; pointer-events: auto; text-wrap: balance; }
+#note { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: min(90vw, 44ch); text-align: center;
+  background: var(--glass); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 13px; }
+.cmp { position: fixed; top: calc(env(safe-area-inset-top) + 52px); left: 50%; transform: translateX(-50%); font: 11.5px var(--font-mono);
+  background: var(--glass); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
-<header>
+<canvas id="stage" aria-label="Transformed view. Press and hold to see the original."></canvas>
+
+<div class="bar">
   <h1>Dichromascope</h1>
-  <p class="lede">A dichromat's colour space is two-dimensional: one chromatic coordinate <b>c = ln(S/L)</b> plus luminance. Any rendering for a trichromat is therefore a 2-D sheet inside our 3-D colour space. Receptor noise fixes the sheet's intrinsic geometry: a flat strip in bright light, a cone with its apex at black where photon noise dominates, and positive curvature between the two. What remains free is how the sheet is bent into human colour space. The top controls set the physiology, the lower ones set the bending, and the stretch map shows where the bending distorts what the animal can tell apart.</p>
-</header>
+  <button id="b-cam" type="button" class="primary">Camera</button>
+  <button id="b-flip" type="button" hidden>Flip</button>
+  <button id="b-scene" type="button">Toy scene</button>
+  <button id="b-chart" type="button">Hue chart</button>
+  <label class="file" for="file">Photo or clip…</label>
+  <input type="file" id="file" accept="image/*,video/*">
+  <span class="sp"></span>
+  <button id="b-mode" type="button" aria-pressed="false" title="Show the literal blue–yellow rendering">Natural</button>
+  <a class="lab" href="lab.html">Lab</a>
+</div>
 
-<main>
-  <section id="ctrl" class="panel" aria-label="Controls">
-    <h2>Physiology</h2>
-    <select id="species" aria-label="Species">
-      <option value="cat" selected>Cat (450 / 556 nm)</option>
-      <option value="dog">Dog (429 / 555 nm)</option>
-      <option value="horse">Horse (428 / 539 nm)</option>
-      <option value="custom">Custom</option>
-    </select>
-    <fieldset id="phys"></fieldset>
-    <h2>Mapping into human colour</h2>
-    <div class="seg" role="group" aria-label="Mapping mode">
-      <button id="m-natural" type="button" data-mode="natural">Natural</button>
-      <button id="m-bell" type="button" data-mode="bell">Bell</button>
-      <button id="m-anchored" type="button" data-mode="anchored">Grey-anchored</button>
-    </div>
-    <p class="note" id="modeNote"></p>
-    <fieldset id="map"></fieldset>
-    <div class="checks" id="mapChecks">
-      <label><input type="checkbox" id="rev"> Reverse hue direction</label>
-      <label><input type="checkbox" id="auto" checked> Fit lightness to display</label>
-    </div>
-  </section>
+<div class="cmp" id="cmp" hidden>original</div>
+<div id="note" hidden></div>
 
-  <section id="img" class="panel" aria-label="Images">
-    <div class="src" role="group" aria-label="Test image">
-      <button id="s-scene" type="button" data-src="scene" aria-pressed="true">Toy scene</button>
-      <button id="s-swatch" type="button" data-src="swatch" aria-pressed="false">Hue chart</button>
-      <button id="s-cam" type="button" data-src="cam" aria-pressed="false">Live camera</button>
-      <button id="s-flip" type="button" hidden>Flip camera</button>
-      <label for="file" id="s-file">Photo or clip…</label>
-      <input type="file" id="file" accept="image/*,video/*">
-      <span class="fps" id="fps"></span>
-    </div>
-    <p class="note" id="srcNote" hidden></p>
-    <video id="vid" playsinline muted loop hidden></video>
-    <div class="pair">
-      <figure><canvas id="cvH"></canvas><figcaption>Human (original)</figcaption></figure>
-      <figure><canvas id="cvA"></canvas><figcaption id="capA">Animal, mapped</figcaption></figure>
-    </div>
-    <div class="strips">
-      <span>Human</span><div class="strip"><canvas id="stH" width="381" height="1"></canvas></div>
-      <span>Mapped</span><div class="strip" id="stAwrap"><canvas id="stA" width="381" height="1"></canvas><i class="np" id="npMark"></i></div>
-      <div class="axis"><span>340</span><span>400</span><span>460</span><span>520</span><span>580</span><span>640</span><span>700 nm</span></div>
-    </div>
-  </section>
+<div class="dock">
+  <div class="dials">
+    <div class="dial" id="d-species" tabindex="0" role="slider" aria-label="Species"><canvas></canvas><span class="lbl">Species</span><span class="val"></span></div>
+    <div class="dial" id="d-light" tabindex="0" role="slider" aria-label="Light level"><canvas></canvas><span class="lbl">Light</span><span class="val"></span></div>
+    <div class="dial" id="d-adapt" tabindex="0" role="slider" aria-label="Adaptation"><canvas></canvas><span class="lbl">Adaptation</span><span class="val"></span></div>
+    <div class="dial" id="d-hue" tabindex="0" role="slider" aria-label="Hue rotation"><canvas></canvas><span class="lbl">Hue</span><span class="val"></span></div>
+  </div>
+  <div class="info" id="info"></div>
+</div>
 
-  <section id="sum" class="panel" aria-label="Readouts">
-    <div class="chips" id="chips"></div>
-  </section>
-
-  <section id="geo" class="panel" aria-label="Geometry">
-    <div class="geo">
-      <div class="space">
-        <h2>Animal colour space, rendered</h2>
-        <canvas id="pal" width="160" height="128"></canvas>
-        <div class="ax2"><span>← long-cone dominant</span><span>dotted: neutral point</span><span>short-cone dominant →</span></div>
-        <p class="note">Horizontal: c = ln(S/L) across the sRGB gamut. Vertical: luminance, log scale, white at top.</p>
-        <h2>Local stretch</h2>
-        <div class="pair">
-          <figure><canvas id="dist" width="160" height="128"></canvas><figcaption>Larger singular value</figcaption></figure>
-          <figure><canvas id="dist2" width="160" height="128"></canvas><figcaption>Smaller singular value</figcaption></figure>
-        </div>
-        <div class="legend"><span>×0.25</span><span class="bar"></span><span>×4</span></div>
-        <p class="note">Singular values of the Jacobian from animal JNDs to human JNDs. Both grey means isometric. Orange means you see differences the animal can't; blue means you lose ones it can. Red ticks on the left edge mark luminance bands where the bell can't be embedded at this hue span.</p>
-      </div>
-      <div class="space">
-        <h2>The sheet in OKLab</h2>
-        <canvas id="v3" width="560" height="560" aria-label="3-D view of the sheet in OKLab; drag to rotate"></canvas>
-        <p class="note">Filled dots: displayed colours. Hollow dots: where the ideal sheet leaves the sRGB gamut. Grey wireframe: sRGB cube. Vertical line: achromatic axis. Drag to rotate.</p>
-      </div>
-    </div>
-  </section>
-</main>
-
-<footer>
-  <p><b>Live camera.</b> Each frame goes through a precomputed 160×128 lookup table over (c, ln Y), so the transform is one bilinear lookup per pixel. Camera access needs https or localhost; on a phone, open the GitHub Pages address in Safari or Chrome and allow the camera.</p>
-  <p><b>Model.</b> Cone templates: Govardovskii et al. (2000), A1 pigment, with a crude lens edge. Photos are upsampled to spectra with the Mallett–Yuksel (2019) basis under D65, so UV is unavailable. Discrimination uses the receptor-noise-limited model (Vorobyev &amp; Osorio 1998) with photon noise added: e(Y) = ω·√(1 + Y₀/Y). That gives the metric ds² = (dc²/e<sub>c</sub>² + du²/e<sub>Y</sub>²)/(1 + Y₀e<sup>−u</sup>) with u = ln Y. Human side: OKLab, with 1 JND ≈ 0.02.</p>
-  <p><b>Bell.</b> Hue h = h₀ + βc, chroma ρ(u) = J·k<sub>c</sub>·G(u)/(e<sub>c</sub>β), and dL/du = √((J·k<sub>Y</sub>·G/e<sub>Y</sub>)² − ρ′²), where G = (1+Y₀e<sup>−u</sup>)<sup>−½</sup>. This is an exact isometry (up to the stretches k) wherever the square root is real. That requires a hue span of at least (k<sub>c</sub>e<sub>Y</sub>/2k<sub>Y</sub>e<sub>c</sub>)·max(1−G²)·Δc. Below that the cone would need ruffles. Weber fractions and cone ratios are assumptions, not measurements for these species. Rods are ignored.</p>
-</footer>
+<video id="vid" playsinline muted loop hidden></video>
 
 <script>
 "use strict";
 const K = {"basis":[[0.32746,0.33186,0.34068],[0.32375,0.32969,0.34656],[0.31344,0.32786,0.3587],[0.28888,0.31917,0.39195],[0.23921,0.29432,0.46647],[0.1897,0.2587,0.5516],[0.12175,0.18889,0.68936],[0.07458,0.12539,0.80003],[0.04443,0.07869,0.87688],[0.02893,0.05314,0.91793],[0.02232,0.04229,0.9354],[0.01691,0.03332,0.94977],[0.01418,0.02976,0.95606],[0.01305,0.03033,0.95662],[0.01199,0.03099,0.95703],[0.01129,0.03169,0.95702],[0.01091,0.03467,0.95442],[0.0104,0.03455,0.95505],[0.01064,0.04068,0.94868],[0.01091,0.05446,0.93463],[0.01103,0.08091,0.90806],[0.01131,0.14635,0.84234],[0.01115,0.37968,0.60917],[0.01015,0.76674,0.22311],[0.00892,0.87621,0.11487],[0.00769,0.91849,0.07382],[0.00671,0.94066,0.05264],[0.006,0.95373,0.04027],[0.00554,0.96164,0.03282],[0.00519,0.9672,0.02761],[0.00503,0.97099,0.02398],[0.00514,0.97285,0.02201],[0.00543,0.97312,0.02145],[0.00582,0.97335,0.02083],[0.0064,0.97335,0.02025],[0.00745,0.97226,0.02029],[0.00858,0.97335,0.01807],[0.0104,0.97315,0.01646],[0.01357,0.97106,0.01537],[0.01938,0.96637,0.01424],[0.03208,0.95494,0.01297],[0.07436,0.91358,0.01206],[0.62439,0.36435,0.01126],[0.91831,0.07151,0.01018],[0.94925,0.04123,0.00952],[0.95819,0.03242,0.00939],[0.95819,0.03192,0.00989],[0.95819,0.03128,0.01054],[0.95568,0.03263,0.01169],[0.95801,0.02953,0.01246],[0.9541,0.03156,0.01434],[0.94761,0.03567,0.01672],[0.93868,0.0414,0.01992],[0.92447,0.0506,0.02493],[0.90461,0.06343,0.03196],[0.88041,0.07892,0.04067],[0.84779,0.09954,0.05267],[0.80578,0.1256,0.06863],[0.75253,0.15759,0.08988],[0.68644,0.1954,0.11816],[0.61869,0.23147,0.14983],[0.54026,0.26885,0.19088],[0.47296,0.29603,0.23101],[0.4327,0.30975,0.25754],[0.40536,0.31782,0.27683],[0.38549,0.32299,0.29152],[0.37098,0.32635,0.30266],[0.35761,0.32914,0.31325],[0.34871,0.33081,0.32048],[0.34488,0.33148,0.32364],[0.34192,0.33198,0.3261],[0.33953,0.33234,0.32813],[0.33717,0.33291,0.32992],[0.33617,0.33292,0.33091],[0.33517,0.33303,0.3318],[0.33442,0.33318,0.3324],[0.33401,0.33325,0.33274],[0.33392,0.33326,0.33282],[0.33382,0.33328,0.3329],[0.33367,0.33329,0.33303],[0.33357,0.33331,0.33311]],"d65":[39.949,42.43,44.912,45.775,46.638,49.364,52.089,51.032,49.975,52.312,54.648,68.701,82.755,87.12,91.486,92.459,93.432,90.057,86.682,95.774,104.865,110.936,117.008,117.41,117.812,116.336,114.861,115.392,115.923,112.367,108.811,109.082,109.354,108.578,107.802,106.296,104.79,106.239,107.689,106.047,104.405,104.225,104.046,102.023,100.0,98.167,96.334,96.061,95.788,92.237,88.686,89.346,90.006,89.803,89.599,88.649,87.699,85.494,83.289,83.494,83.699,81.863,80.027,80.121,80.215,81.246,82.278,80.281,78.284,74.003,69.721,70.665,71.609,72.979,74.349,67.977,61.604,65.745,69.886,72.486,75.087,69.34,63.593,55.005,46.418,56.612,66.805,65.094,63.383],"human":[[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[4,0,20],[5,0,26],[8,0,33],[11,0,40],[15,0,49],[19,0,58],[24,0,69],[29,0,80],[34,0,92],[39,0,104],[44,0,116],[49,0,128],[54,0,140],[59,0,152],[62,0,162],[66,0,171],[68,0,179],[70,0,186],[71,0,192],[72,0,198],[73,0,204],[73,0,209],[73,0,213],[72,0,217],[72,0,221],[71,0,224],[68,0,225],[65,0,224],[61,0,223],[57,0,222],[52,0,220],[45,0,216],[36,0,212],[22,0,208],[0,0,204],[0,0,201],[0,24,199],[0,38,197],[0,49,193],[0,59,189],[0,68,183],[0,76,176],[0,82,169],[0,89,161],[0,94,152],[0,100,144],[0,104,136],[0,109,127],[0,113,119],[0,117,111],[0,121,104],[0,125,97],[0,129,90],[0,134,84],[0,139,77],[0,144,70],[0,149,62],[0,155,53],[0,160,42],[0,165,28],[0,170,4],[0,175,0],[0,180,0],[0,184,0],[0,188,0],[0,192,0],[0,194,0],[0,196,0],[0,198,0],[0,200,0],[0,201,0],[0,202,0],[0,202,0],[0,203,0],[0,203,0],[0,203,0],[0,202,0],[0,202,0],[0,200,0],[0,198,0],[0,197,0],[0,195,0],[34,193,0],[67,191,0],[88,188,0],[105,185,0],[119,181,0],[132,178,0],[144,174,0],[155,170,0],[166,165,0],[175,160,0],[184,154,0],[193,148,0],[200,141,0],[208,133,0],[215,125,0],[222,117,0],[229,108,0],[234,99,0],[238,88,0],[242,76,0],[246,62,0],[249,45,0],[251,15,0],[253,0,0],[254,0,0],[255,0,0],[255,0,0],[254,0,0],[253,0,0],[251,0,0],[248,0,0],[245,0,0],[242,0,0],[238,0,0],[234,0,0],[230,0,0],[225,0,0],[219,0,0],[213,0,0],[206,0,0],[200,0,0],[193,0,0],[187,0,1],[180,0,1],[174,0,1],[168,0,2],[161,0,2],[154,0,2],[147,0,2],[140,0,2],[133,0,2],[127,0,1],[120,0,1],[114,0,1],[108,0,1],[102,0,1],[96,0,1],[90,0,1],[85,0,1],[80,0,1],[75,0,1],[70,0,1],[65,0,1],[61,0,0],[57,0,0],[52,0,0],[48,0,0],[45,0,0],[41,0,0],[38,0,0],[35,0,0],[32,0,0],[29,0,0],[27,0,0],[24,0,0],[22,0,0],[20,0,0],[18,0,0],[16,0,0],[14,0,0],[12,0,0],[11,0,0],[9,0,0],[8,0,0]],"A":[[0.12636,0.87364],[0.25509,0.74491],[1.0,0.0]],"LMS2RGB":[[5.472212,-4.64196,0.169637],[-1.125242,2.293171,-0.167895],[0.029802,-0.193181,1.163648]]};
-
-// ---------- constants ----------
-const J = 0.02, EPS = 0.02, YMIN = 0.002, UMIN = Math.log(YMIN);
-const NC = 160, NU = 128;
-const SPECIES = { dog: { s: 429, l: 555, lens: 390 }, cat: { s: 450, l: 556, lens: 380 }, horse: { s: 428, l: 539, lens: 380 } };
-
 // ---------- small linear algebra ----------
 function inv3(m) {
   const [a, b, c] = m[0], [d, e, f] = m[1], [g, h, i] = m[2];
@@ -242,151 +129,206 @@ function nomo(w, lmax) {
 const sens = (w, lmax, lens) => nomo(w, lmax) / (1 + Math.exp(-(w - lens) / 8)) * w;  // energy-based
 function d65(w) { const x = (w - 340) / 5, i = Math.max(0, Math.min(K.d65.length - 2, Math.floor(x))), t = x - i; return K.d65[i] * (1 - t) + K.d65[i + 1] * t; }
 
-// ---------- state ----------
-const S = { lS: 450, lL: 556, lens: 380, w: 0.05, eta: 0.10, wY: 0.05, light: 3,
-            mode: "bell", span: 290, hL: 25, kc: 0, kY: -1.5, Lw: 0.93, Lb: 0.12, rev: false, auto: true, src: "scene" };
 
-const PHYS = [
-  { id: "lS", label: "Short-cone λmax", min: 400, max: 475, step: 1, fmt: v => v + " nm" },
-  { id: "lL", label: "Long-cone λmax", min: 495, max: 575, step: 1, fmt: v => v + " nm" },
-  { id: "w", label: "Weber fraction, long cone", min: 0.02, max: 0.2, step: 0.005, fmt: v => v.toFixed(3) },
-  { id: "eta", label: "Short-cone share of cones", min: 0.03, max: 0.5, step: 0.01, fmt: v => Math.round(v * 100) + "%" },
-  { id: "wY", label: "Weber fraction, luminance", min: 0.02, max: 0.2, step: 0.005, fmt: v => v.toFixed(3) },
-  { id: "light", label: "Light level", min: -0.5, max: 5, step: 0.1, fmt: v => {
-      const w = v < 0.5 ? "night" : v < 1.5 ? "dusk" : v < 3 ? "overcast" : "daylight";
-      const p = 100 * Math.pow(10, -v); return `${w} · knee ${p >= 1 ? p.toFixed(0) : p.toPrecision(1)}% of white`; } },
-];
-const MAP = [
-  { id: "span", label: "Hue span", min: 20, max: 360, step: 1, fmt: v => v + "°" },
-  { id: "hL", label: "Hue of long-wave end", min: 0, max: 359, step: 1, fmt: v => v + "°", dot: true },
-  { id: "kc", label: "Chromatic stretch k_c", min: -2, max: 2, step: 0.05, fmt: v => "×" + Math.pow(2, v).toFixed(2) },
-  { id: "kY", label: "Lightness stretch k_Y", min: -5, max: 1, step: 0.05, fmt: v => "×" + Math.pow(2, v).toFixed(2) },
-  { id: "Lw", label: "White lightness (OKLab L)", min: 0.6, max: 1, step: 0.01, fmt: v => v.toFixed(2) },
-  { id: "Lb", label: "Black lightness (when fitting)", min: 0, max: 0.4, step: 0.01, fmt: v => v.toFixed(2) },
-];
-function buildSliders(host, spec) {
-  for (const p of spec) {
-    const row = document.createElement("div"); row.className = "row";
-    row.innerHTML = `<label for="${p.id}">${p.label}</label><output id="${p.id}-o" for="${p.id}">${p.dot ? '<i class="dot" id="hdot"></i>' : ""}<span></span></output><input type="range" id="${p.id}" min="${p.min}" max="${p.max}" step="${p.step}" value="${S[p.id]}">`;
-    host.appendChild(row);
-    const inp = row.querySelector("input");
-    inp.addEventListener("input", () => {
-      S[p.id] = parseFloat(inp.value);
-      if (p.id === "lS" || p.id === "lL") document.getElementById("species").value = "custom";
-      schedule();
-    });
-  }
-}
-function syncOutputs() {
-  for (const p of PHYS.concat(MAP)) {
-    document.getElementById(p.id).value = S[p.id];
-    document.querySelector(`#${p.id}-o span`).textContent = p.fmt(S[p.id]);
-  }
-  document.getElementById("hdot").style.background = oklchCss(0.72, 0.13, S.hL);
-}
 
-// ---------- model ----------
-let Mdl = null;
-function buildModel() {
-  const { lS, lL, lens } = S;
-  const sS = w => sens(w, lS, lens), sL = w => sens(w, lL, lens);
-  // photo matrix: linear sRGB -> white-normalised [qS, qL]
+// ---------- physiology ----------
+const J = 0.02, EPS = 0.02, YMIN = 0.002, UMIN = Math.log(YMIN);
+const SPECIES = [
+  { name: "Cat", s: 450, l: 556, lens: 380 },
+  { name: "Dog", s: 429, l: 555, lens: 390 },
+  { name: "Horse", s: 428, l: 539, lens: 380 },
+];
+const NOISE = { w: 0.05, eta: 0.10, wY: 0.05 };   // placeholders, see issue #3
+const TAU = 1.0;                                    // adaptation time constant (s), rough
+const CLIP_TOL = 0.10;                              // fraction of the sheet allowed to clip
+const NB = 64;                                      // transfer-function bins per channel
+const NYc = 256, NYy = 128;                         // sheet colour table
+
+const S = { sp: 0, light: 3, adapt: 0.5, rot: 29, natural: false };
+
+function speciesModel() {
+  const sp = SPECIES[S.sp];
+  const sS = w => sens(w, sp.s, sp.lens), sL = w => sens(w, sp.l, sp.lens);
   const Q = [[0, 0, 0], [0, 0, 0]];
   for (let k = 0; k < K.basis.length; k++) {
     const w = 380 + 5 * k, D = d65(w), b = K.basis[k], a = sS(w) * D, c = sL(w) * D;
     for (let j = 0; j < 3; j++) { Q[0][j] += a * b[j]; Q[1][j] += c * b[j]; }
   }
   for (const r of Q) { const s = r[0] + r[1] + r[2]; r[0] /= s; r[1] /= s; r[2] /= s; }
-  // monochromatic white normalisation
-  let wS = 0, wL = 0, wD = 0;
-  for (let w = 340; w <= 780; w++) { const D = d65(w); wS += sS(w) * D; wL += sL(w) * D; wD += D; }
-  wS /= wD; wL /= wD;
-  let np = lS, best = 1e9;
-  for (let w = lS; w <= lL; w += 0.5) { const d = Math.abs(Math.log(sS(w) / wS) - Math.log(sL(w) / wL)); if (d < best) { best = d; np = w; } }
-  // chromatic range over sRGB cube corners
   let clo = 1e9, chi = -1e9;
   for (let k = 1; k < 8; k++) {
     const rgb = [(k >> 2) & 1, (k >> 1) & 1, k & 1];
     const qs = Q[0][0]*rgb[0]+Q[0][1]*rgb[1]+Q[0][2]*rgb[2], ql = Q[1][0]*rgb[0]+Q[1][1]*rgb[1]+Q[1][2]*rgb[2];
     const c = Math.log((qs + EPS) / (ql + EPS)); clo = Math.min(clo, c); chi = Math.max(chi, c);
   }
-  const dc = chi - clo;
-  // noise
-  const eL = S.w, eS = S.w * Math.sqrt((1 - S.eta) / S.eta), ec = Math.hypot(eS, eL), eY = S.wY;
+  const ec = Math.hypot(NOISE.w * Math.sqrt((1 - NOISE.eta) / NOISE.eta), NOISE.w), eY = NOISE.wY;
   const Y0 = Math.pow(10, -S.light);
-  const du = -UMIN / (NU - 1);
-  const U = new Float64Array(NU), G = new Float64Array(NU);
-  for (let j = 0; j < NU; j++) { U[j] = UMIN + j * du; G[j] = 1 / Math.sqrt(1 + Y0 * Math.exp(-U[j])); }
-  let lumJND = 0; for (let j = 1; j < NU; j++) lumJND += 0.5 * (G[j] + G[j - 1]) * du / eY;
-  const chromJND = dc * G[NU - 1] / ec;
-
-  // mapping profile
-  const kc = Math.pow(2, S.kc), sgn = S.rev ? -1 : 1, span = S.span * Math.PI / 180, beta = span / dc;
-  const rho = new Float64Array(NU), drho = new Float64Array(NU);
-  for (let j = 0; j < NU; j++) { rho[j] = J * kc * G[j] / (ec * beta); drho[j] = J * kc * 0.5 * G[j] * (1 - G[j] * G[j]) / (ec * beta); }
-  function profile(kY) {
-    const L = new Float64Array(NU), viol = new Uint8Array(NU); L[NU - 1] = S.Lw;
-    for (let j = NU - 1; j > 0; j--) {
-      const g = 0.5 * (G[j] + G[j - 1]), r = 0.5 * (drho[j] + drho[j - 1]);
-      const rad = (J * kY * g / eY) ** 2 - r * r;
-      if (rad < 0) { viol[j] = viol[j - 1] = 1; }
-      L[j - 1] = L[j] - Math.sqrt(Math.max(0, rad)) * du;
-    }
-    return { L, viol };
-  }
-  let kY = Math.pow(2, S.kY);
-  if (S.mode !== "natural" && S.auto) {
-    let lo = 1e-3, hi = 4;
-    if (profile(hi).L[0] > S.Lb) kY = hi;
-    else { for (let it = 0; it < 50; it++) { const m = Math.sqrt(lo * hi); if (profile(m).L[0] > S.Lb) lo = m; else hi = m; } kY = Math.sqrt(lo * hi); }
-  }
-  const prof = profile(kY);
-  let maxOneMinusG2 = 0; for (let j = 0; j < NU; j++) maxOneMinusG2 = Math.max(maxOneMinusG2, 1 - G[j] * G[j]);
-  const spanMin = (kc * eY / (2 * kY * ec)) * maxOneMinusG2 * dc * 180 / Math.PI;
-  let violFrac = 0; for (let j = 0; j < NU; j++) violFrac += prof.viol[j]; violFrac /= NU;
-
-  // LUT over (c, u)
-  const N = NC * NU;
-  const rgb8 = new Uint8ClampedArray(N * 3), labC = new Float32Array(N * 3), labR = new Float32Array(N * 3), clip = new Uint8Array(N);
-  const hL = S.hL * Math.PI / 180, phi0 = hL + sgn * beta * (0 - clo);
-  for (let j = 0; j < NU; j++) for (let i = 0; i < NC; i++) {
-    const c = clo + dc * i / (NC - 1), u = U[j], n = j * NC + i;
-    let lab;
-    if (S.mode === "natural") {
-      const qL = Math.exp(u), qS = Math.max(0, (qL + EPS) * Math.exp(c) - EPS);
-      const lms = [K.A[0][0] * qS + K.A[0][1] * qL, K.A[1][0] * qS + K.A[1][1] * qL, K.A[2][0] * qS + K.A[2][1] * qL];
-      lab = lin2lab(mv(K.LMS2RGB, lms));
-    } else {
-      const phi = hL + sgn * beta * (c - clo), r = rho[j];
-      lab = S.mode === "bell" ? [prof.L[j], r * Math.cos(phi), r * Math.sin(phi)]
-                              : [prof.L[j], r * (Math.cos(phi) - Math.cos(phi0)), r * (Math.sin(phi) - Math.sin(phi0))];
-    }
-    const cl = clipLab(lab[0], lab[1], lab[2]);
-    for (let k = 0; k < 3; k++) { labR[3 * n + k] = lab[k]; labC[3 * n + k] = cl.lab[k]; rgb8[3 * n + k] = enc(cl.rgb[k]); }
-    clip[n] = cl.clipped ? 1 : 0;
-  }
-  // local stretch: singular values of Jacobian in JND-normalised frames
-  const smax = new Float32Array(N), smin = new Float32Array(N), hc = dc / (NC - 1);
-  for (let j = 0; j < NU; j++) for (let i = 0; i < NC; i++) {
-    const n = j * NC + i;
-    const i0 = Math.max(0, i - 1), i1 = Math.min(NC - 1, i + 1), j0 = Math.max(0, j - 1), j1 = Math.min(NU - 1, j + 1);
-    const fc = ec / (G[j] * J * (i1 - i0) * hc), fu = eY / (G[j] * J * (j1 - j0) * du);
-    let a = 0, b = 0, d = 0;
-    for (let k = 0; k < 3; k++) {
-      const x = (labC[3 * (j * NC + i1) + k] - labC[3 * (j * NC + i0) + k]) * fc;
-      const y = (labC[3 * (j1 * NC + i) + k] - labC[3 * (j0 * NC + i) + k]) * fu;
-      a += x * x; b += x * y; d += y * y;
-    }
-    const m = (a + d) / 2, r = Math.sqrt(((a - d) / 2) ** 2 + b * b);
-    smax[n] = Math.sqrt(m + r); smin[n] = Math.sqrt(Math.max(0, m - r));
-  }
-  Mdl = { Q, wS, wL, sS, sL, np, clo, chi, dc, ec, eY, Y0, chromJND, lumJND, kY, kc, spanMin, violFrac, viol: prof.viol,
-          rho, rgb8, labC, labR, clip, smax, smin, U, du, Lprof: prof.L };
+  const Gu = u => 1 / Math.sqrt(1 + Y0 * Math.exp(-u));
+  // luminance: long-term (range-matched) weights per bin, and cumulative for inverse lookup
+  const wY = new Float64Array(NB), uB = i => UMIN + (-UMIN) * (i + 0.5) / NB;
+  let TY = 0; for (let i = 0; i < NB; i++) { wY[i] = Gu(uB(i)); TY += wY[i] * (-UMIN) / NB / eY; }
+  const sw = wY.reduce((a, b) => a + b, 0); for (let i = 0; i < NB; i++) wY[i] /= sw;
+  // G as a function of range-matched lightness position yY
+  const cum = new Float64Array(NB + 1); for (let i = 0; i < NB; i++) cum[i + 1] = cum[i] + wY[i];
+  const gOfY = yY => { let i = 0; while (i < NB - 1 && cum[i + 1] < yY) i++; return Gu(uB(i)); };
+  const Tc = (chi - clo) * Gu(0) / ec;
+  return { Q, clo, chi, ec, eY, Y0, Gu, wY, TY, Tc, gOfY };
 }
 
-// ---------- images ----------
-const cvH = document.getElementById("cvH"), cvA = document.getElementById("cvA");
-let srcData = null;
+// ---------- gamut table and sheet fit ----------
+const CM_L = 65, CM_H = 180;
+const CMAX = new Float32Array(CM_L * CM_H);
+(function buildCmax() {
+  for (let i = 0; i < CM_L; i++) for (let j = 0; j < CM_H; j++) {
+    const L = i / (CM_L - 1), h = j * 2 * Math.PI / 180;
+    let lo = 0, hi = 0.4;
+    for (let k = 0; k < 16; k++) { const m = (lo + hi) / 2; if (inG(lab2lin([L, m * Math.cos(h), m * Math.sin(h)]))) lo = m; else hi = m; }
+    CMAX[i * CM_H + j] = lo;
+  }
+})();
+function cmax(L, hdeg) {
+  const x = Math.min(CM_L - 1.0001, Math.max(0, L * (CM_L - 1))), i = Math.floor(x), fx = x - i;
+  let hh = ((hdeg % 360) + 360) % 360 / 2; const j = Math.floor(hh) % CM_H, j1 = (j + 1) % CM_H, fy = hh - Math.floor(hh);
+  const a = CMAX[i * CM_H + j], b = CMAX[i * CM_H + j1], c = CMAX[(i + 1) * CM_H + j], d = CMAX[(i + 1) * CM_H + j1];
+  return (a * (1 - fy) + b * fy) * (1 - fx) + (c * (1 - fy) + d * fy) * fx;
+}
+function fitSheet(M) {
+  const levels = 24, hues = 36, g = [];
+  for (let k = 0; k < levels; k++) g.push(M.gOfY((k + 0.5) / levels));
+  const meanG = g.reduce((a, b) => a + b, 0) / levels;
+  const cells = new Float64Array(levels * hues);
+  let best = null;
+  for (let span = 150; span <= 330; span += 30)
+    for (let Lw = 0.70; Lw <= 0.971; Lw += 0.03)
+      for (let Lb = 0.03; Lb <= 0.301; Lb += 0.03) {
+        if (Lw - Lb < 0.4) continue;
+        let n = 0;
+        for (let k = 0; k < levels; k++) {
+          const L = Lb + (Lw - Lb) * (k + 0.5) / levels;
+          for (let j = 0; j < hues; j++) cells[n++] = cmax(L, S.rot + span * (j + 0.5) / hues) / g[k];
+        }
+        const sorted = Array.from(cells).sort((a, b) => a - b);
+        const R = sorted[Math.floor(CLIP_TOL * sorted.length)];
+        const Hc = R * span * Math.PI / 180 / J, HY = (Lw - Lb) / J;
+        const score = Math.sqrt(Hc * meanG * HY);
+        if (!best || score > best.score) best = { span, Lw, Lb, R, Hc, HY, score };
+      }
+  return best;
+}
+
+// sheet colour table over (yc, yY) in [0,1]^2
+let SHEET = new Uint8ClampedArray(NYc * NYy * 3);
+function buildSheet(M, F) {
+  const gY = new Float64Array(NYy); for (let j = 0; j < NYy; j++) gY[j] = M.gOfY(j / (NYy - 1));
+  for (let j = 0; j < NYy; j++) {
+    const L = F.Lb + (F.Lw - F.Lb) * j / (NYy - 1), rho = F.R * gY[j];
+    for (let i = 0; i < NYc; i++) {
+      const h = (S.rot + F.span * i / (NYc - 1)) * Math.PI / 180;
+      const cl = clipLab(L, rho * Math.cos(h), rho * Math.sin(h)), n = 3 * (j * NYc + i);
+      SHEET[n] = enc(cl.rgb[0]); SHEET[n + 1] = enc(cl.rgb[1]); SHEET[n + 2] = enc(cl.rgb[2]);
+    }
+  }
+}
+function sheetRGB(yc, yY) {
+  const i = Math.round(Math.min(1, Math.max(0, yc)) * (NYc - 1)), j = Math.round(Math.min(1, Math.max(0, yY)) * (NYy - 1)), n = 3 * (j * NYc + i);
+  return `rgb(${SHEET[n]},${SHEET[n + 1]},${SHEET[n + 2]})`;
+}
+
+// ---------- adaptation (Laughlin) ----------
+const histC = new Float64Array(NB).fill(1 / NB), histY = new Float64Array(NB).fill(1 / NB);
+let cMean = 0;
+// transfer: mix long-term weights w with scene density p, cap local gain at capRatio·w, cumulate
+function transfer(w, p, alpha, capRatio, out) {
+  const s = new Float64Array(NB);
+  for (let i = 0; i < NB; i++) s[i] = (1 - alpha) * w[i] + alpha * p[i];
+  for (let it = 0; it < 8; it++) {
+    let excess = 0, room = 0;
+    for (let i = 0; i < NB; i++) { const cap = capRatio * w[i]; if (s[i] > cap) { excess += s[i] - cap; s[i] = cap; } else room += w[i]; }
+    if (excess < 1e-9 || room <= 0) break;
+    for (let i = 0; i < NB; i++) if (s[i] < capRatio * w[i]) s[i] += excess * w[i] / room;
+  }
+  let tot = 0; for (let i = 0; i < NB; i++) tot += s[i];
+  out[0] = 0; for (let i = 0; i < NB; i++) out[i + 1] = out[i] + s[i] / tot;
+}
+const TC = new Float64Array(NB + 1), TYf = new Float64Array(NB + 1);
+const wC = new Float64Array(NB).fill(1 / NB);
+
+// ---------- model state ----------
+let M = null, F = null;
+function rebuild() {
+  M = speciesModel();
+  F = fitSheet(M);
+  buildSheet(M, F);
+  rateC = F.Hc / M.Tc; rateY = F.HY / M.TY;
+  updateTransfers();
+  for (const d of dials) d.draw();
+  updateInfo();
+  if (!live) renderStatic();
+}
+let rateC = 1, rateY = 1;
+function updateInfo() {
+  const nm = SPECIES[S.sp].name.toLowerCase();
+  document.getElementById("info").textContent = S.natural
+    ? `Literal ${nm} cone catches on the blue–yellow plane · hold to compare`
+    : `1 ${nm} colour JND → ${rateC.toFixed(1)} of yours · lightness → ${rateY.toFixed(2)} · ${M.Tc.toFixed(0)}×${M.TY.toFixed(0)} JNDs · hold to compare` + (fpsTxt ? ` · ${fpsTxt}` : "");
+}
+
+// ---------- frame processing ----------
+const stage = document.getElementById("stage"), sx = stage.getContext("2d");
+const work = document.createElement("canvas"), wx = work.getContext("2d", { willReadFrequently: true });
+let srcData = null, outData = null, comparing = false;
+function processFrame(dt) {
+  const W = srcData.width, H = srcData.height, n = W * H, src = srcData.data, o = outData.data;
+  const Q = M.Q, q00 = Q[0][0], q01 = Q[0][1], q02 = Q[0][2], q10 = Q[1][0], q11 = Q[1][1], q12 = Q[1][2];
+  const A = K.A, P = K.LMS2RGB;
+  const clo = M.clo, kC = NB / (M.chi - M.clo), kU = NB / (-UMIN), shift = S.adapt * cMean;
+  const hc = new Float64Array(NB), hy = new Float64Array(NB); let cs = 0, cn = 0, ns = 0;
+  for (let p = 0; p < n; p++) {
+    const r = DEC[src[4 * p]], g = DEC[src[4 * p + 1]], b = DEC[src[4 * p + 2]];
+    const qs = q00 * r + q01 * g + q02 * b, ql = q10 * r + q11 * g + q12 * b;
+    if (S.natural) {
+      const l0 = A[0][0] * qs + A[0][1] * ql, l1 = A[1][0] * qs + A[1][1] * ql, l2 = A[2][0] * qs + A[2][1] * ql;
+      o[4 * p] = enc(P[0][0] * l0 + P[0][1] * l1 + P[0][2] * l2);
+      o[4 * p + 1] = enc(P[1][0] * l0 + P[1][1] * l1 + P[1][2] * l2);
+      o[4 * p + 2] = enc(P[2][0] * l0 + P[2][1] * l1 + P[2][2] * l2);
+      o[4 * p + 3] = 255; continue;
+    }
+    const c0 = Math.log((qs + EPS) / (ql + EPS));
+    let xc = (c0 - shift - clo) * kC; xc = xc < 0 ? 0 : xc > NB - 1e-6 ? NB - 1e-6 : xc;
+    let xu = (Math.log(ql > YMIN ? ql : YMIN) - UMIN) * kU; xu = xu < 0 ? 0 : xu > NB - 1e-6 ? NB - 1e-6 : xu;
+    const ic = xc | 0, iu = xu | 0;
+    const yc = TC[ic] + (TC[ic + 1] - TC[ic]) * (xc - ic), yY = TYf[iu] + (TYf[iu + 1] - TYf[iu]) * (xu - iu);
+    const fx = yc * (NYc - 1), fy = yY * (NYy - 1), i = Math.min(NYc - 2, fx | 0), j = Math.min(NYy - 2, fy | 0), ax = fx - i, ay = fy - j;
+    const a0 = 3 * (j * NYc + i), a1 = a0 + 3, a2 = a0 + 3 * NYc, a3 = a2 + 3;
+    for (let k = 0; k < 3; k++)
+      o[4 * p + k] = (SHEET[a0 + k] * (1 - ax) + SHEET[a1 + k] * ax) * (1 - ay) + (SHEET[a2 + k] * (1 - ax) + SHEET[a3 + k] * ax) * ay;
+    o[4 * p + 3] = 255;
+    if ((p & 3) === 0) { hc[ic]++; hy[iu]++; ns++; if (ql > 0.02) { cs += c0; cn++; } }
+  }
+  if (!S.natural && ns) {
+    const k = dt == null ? 1 : 1 - Math.exp(-dt / TAU);
+    for (let i = 0; i < NB; i++) { histC[i] += k * (hc[i] / ns - histC[i]); histY[i] += k * (hy[i] / ns - histY[i]); }
+    if (cn) cMean += k * (cs / cn - cMean);
+    updateTransfers();
+  }
+}
+function updateTransfers() {
+  // local gain may rise only until one animal JND equals one human JND (noise floor),
+  // unless the long-term exchange rate already exceeds that
+  transfer(wC, histC, S.adapt, Math.max(1, 1 / rateC), TC);
+  transfer(M.wY, histY, S.adapt, Math.max(1, 1 / rateY), TYf);
+}
+function show() { sx.putImageData(comparing ? srcData : outData, 0, 0); }
+function setFrameSize(w, h) {
+  for (const c of [stage, work]) { c.width = w; c.height = h; }
+  outData = new ImageData(w, h);
+}
+function renderStatic() {
+  if (!srcData) return;
+  processFrame(null); processFrame(null); show();   // first pass gathers stats, second renders with them
+}
+
+// ---------- sources ----------
 function mulberry(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function noiseField(w, h, scale, rnd) {
   const sw = Math.ceil(w / scale) + 2, sh = Math.ceil(h / scale) + 2;
@@ -438,39 +380,36 @@ function swatchImage() {
   }
   return out;
 }
-const cxH = cvH.getContext("2d", { willReadFrequently: true });
-const vid = document.getElementById("vid"), srcNote = document.getElementById("srcNote"), fpsEl = document.getElementById("fps");
-let stream = null, live = false, facing = "environment", frameNo = 0, tLast = 0, fpsAvg = 0;
-function note(msg) { srcNote.hidden = !msg; srcNote.textContent = msg || ""; }
+
+const vid = document.getElementById("vid"), noteEl = document.getElementById("note");
+let stream = null, live = false, facing = "environment", tLast = 0, fpsAvg = 0, fpsTxt = "", frameNo = 0;
+function note(msg) { noteEl.hidden = !msg; noteEl.textContent = msg || ""; }
 function stopLive() {
-  live = false; fpsEl.textContent = "";
+  live = false; fpsTxt = "";
   if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
   vid.pause(); vid.removeAttribute("src"); vid.srcObject = null;
-  document.getElementById("s-flip").hidden = true;
+  document.getElementById("b-flip").hidden = true;
 }
-function setSource(id) {
+function setStill(id) {
   stopLive(); note("");
-  srcData = id;
-  for (const c of [cvH, cvA]) { c.width = id.width; c.height = id.height; }
-  cxH.putImageData(id, 0, 0);
-  if (Mdl) renderChips(renderAnimal(true)); else schedule();
+  setFrameSize(id.width, id.height);
+  srcData = id; histC.fill(1 / NB); histY.fill(1 / NB); cMean = 0;
+  renderStatic(); updateInfo();
 }
 function startLoop() {
-  const s = Math.min(1, 640 / vid.videoWidth), w = Math.round(vid.videoWidth * s), h = Math.round(vid.videoHeight * s);
-  for (const c of [cvH, cvA]) { c.width = w; c.height = h; }
-  live = true; frameNo = 0; tLast = performance.now();
+  const s = Math.min(1, Math.sqrt(300000 / (vid.videoWidth * vid.videoHeight)));
+  const w = Math.round(vid.videoWidth * s), h = Math.round(vid.videoHeight * s);
+  setFrameSize(w, h);
+  live = true; tLast = performance.now(); frameNo = 0;
   const step = () => {
     if (!live) return;
-    if (vid.readyState >= 2 && Mdl) {
-      cxH.drawImage(vid, 0, 0, w, h);
-      srcData = cxH.getImageData(0, 0, w, h);
-      const want = frameNo % 15 === 0;
-      const st = renderAnimal(want);
-      if (want) renderChips(st);
-      frameNo++;
-      const t = performance.now(), dt = t - tLast; tLast = t;
-      fpsAvg = fpsAvg ? 0.9 * fpsAvg + 0.1 * (1000 / dt) : 1000 / dt;
-      if (frameNo % 10 === 0) fpsEl.textContent = fpsAvg.toFixed(0) + " fps";
+    if (vid.readyState >= 2) {
+      wx.drawImage(vid, 0, 0, w, h);
+      srcData = wx.getImageData(0, 0, w, h);
+      const t = performance.now(), dt = (t - tLast) / 1000; tLast = t;
+      processFrame(Math.min(dt, 0.5)); show();
+      fpsAvg = fpsAvg ? 0.9 * fpsAvg + 0.1 / Math.max(dt, 1e-3) : 1 / Math.max(dt, 1e-3);
+      if (++frameNo % 15 === 0) { fpsTxt = fpsAvg.toFixed(0) + " fps"; updateInfo(); dials[3].draw(); }
     }
     if (vid.requestVideoFrameCallback) vid.requestVideoFrameCallback(step); else requestAnimationFrame(step);
   };
@@ -479,209 +418,159 @@ function startLoop() {
 async function startCamera() {
   stopLive();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    note("This page can't reach a camera here. Open the GitHub Pages copy over https, or use “Photo or clip…”."); return false;
+    note("No camera access on this page. Open it over https (the GitHub Pages address) or use “Photo or clip…”."); return;
   }
   try {
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
-  } catch (e) {
-    note(`Camera unavailable (${e.name}). Allow camera access for this site, or use “Photo or clip…”.`); return false;
-  }
+  } catch (e) { note(`Camera unavailable (${e.name}). Allow camera access for this site, or use “Photo or clip…”.`); return; }
   vid.srcObject = stream; await vid.play();
-  note(""); document.getElementById("s-flip").hidden = false;
-  startLoop(); return true;
-}
-function renderAnimal(wantStats) {
-  const { Q, clo, dc, rgb8, smax, smin, clip } = Mdl, src = srcData.data, n = srcData.width * srcData.height;
-  const out = new ImageData(srcData.width, srcData.height), o = out.data;
-  const sm = [], sn = []; let nclip = 0, ns = 0;
-  for (let p = 0; p < n; p++) {
-    const r = DEC[src[4 * p]], g = DEC[src[4 * p + 1]], b = DEC[src[4 * p + 2]];
-    const qs = Q[0][0] * r + Q[0][1] * g + Q[0][2] * b, ql = Q[1][0] * r + Q[1][1] * g + Q[1][2] * b;
-    let x = (Math.log((qs + EPS) / (ql + EPS)) - clo) / dc * (NC - 1);
-    let y = (Math.log(Math.max(ql, YMIN)) - UMIN) / -UMIN * (NU - 1);
-    x = Math.min(NC - 1.0001, Math.max(0, x)); y = Math.min(NU - 1.0001, Math.max(0, y));
-    const i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j;
-    const a = 3 * (j * NC + i), bq = a + 3, cq = a + 3 * NC, dq = cq + 3;
-    for (let k = 0; k < 3; k++)
-      o[4 * p + k] = (rgb8[a + k] * (1 - fx) + rgb8[bq + k] * fx) * (1 - fy) + (rgb8[cq + k] * (1 - fx) + rgb8[dq + k] * fx) * fy;
-    o[4 * p + 3] = 255;
-    if (wantStats && (p & 7) === 0) { const cell = Math.round(y) * NC + Math.round(x); sm.push(smax[cell]); sn.push(smin[cell]); nclip += clip[cell]; ns++; }
-  }
-  cvA.getContext("2d").putImageData(out, 0, 0);
-  if (!wantStats) return null;
-  const med = a => { a.sort((u, v) => u - v); return a[Math.floor(a.length / 2)]; };
-  return { smaxMed: med(sm), sminMed: med(sn), clipFrac: nclip / ns };
+  note(""); document.getElementById("b-flip").hidden = false;
+  startLoop();
 }
 
-// ---------- strips ----------
-function renderStrips() {
-  const h = document.getElementById("stH"), hx = h.getContext("2d"), hid = hx.createImageData(381, 1);
-  for (let i = 0; i < 381; i++) { const c = K.human[Math.min(K.human.length - 1, Math.round(i / 2))]; hid.data.set([c[0], c[1], c[2], 255], 4 * i); }
-  hx.putImageData(hid, 0, 0);
-  const { sS, sL, wS, wL, clo, dc, rgb8 } = Mdl;
-  const a = document.getElementById("stA"), ax = a.getContext("2d"), aid = ax.createImageData(381, 1);
-  let mx = 0; for (let w = 340; w <= 720; w++) mx = Math.max(mx, sL(w) / wL);
-  for (let k = 0; k < 381; k++) {
-    const w = 340 + k, qs = sS(w) / wS / mx, ql = sL(w) / wL / mx;
-    const x = Math.round(Math.min(1, Math.max(0, (Math.log((qs + EPS) / (ql + EPS)) - clo) / dc)) * (NC - 1));
-    const y = Math.round(Math.min(1, Math.max(0, (Math.log(Math.max(ql, YMIN)) - UMIN) / -UMIN)) * (NU - 1));
-    const n = 3 * (y * NC + x); aid.data.set([rgb8[n], rgb8[n + 1], rgb8[n + 2], 255], 4 * k);
+// ---------- dials ----------
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+class Dial {
+  constructor(id, o) {
+    Object.assign(this, o);
+    this.el = document.getElementById(id); this.cv = this.el.querySelector("canvas"); this.val = this.el.querySelector(".val");
+    const dpr = Math.min(3, window.devicePixelRatio || 1); this.cv.width = this.cv.height = Math.round(72 * dpr); this.dpr = dpr;
+    let drag = null;
+    const ang = e => { const r = this.cv.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)); };
+    this.el.addEventListener("pointerdown", e => {
+      if (this.disabled && this.disabled()) return;
+      drag = { a: ang(e), x: e.clientX, y: e.clientY, moved: false, acc: 0, v0: this.get() };
+      this.el.setPointerCapture(e.pointerId); e.preventDefault();
+    });
+    this.el.addEventListener("pointermove", e => {
+      if (!drag) return;
+      if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 5) drag.moved = true;
+      if (!drag.moved || !this.sweep) return;
+      const a = ang(e); let d = a - drag.a; if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI;
+      drag.a = a; drag.acc += d;
+      this.apply(drag.v0 + drag.acc / this.sweep * (this.max - this.min));
+    });
+    const end = () => { if (drag && !drag.moved && this.tap) this.tap(); drag = null; };
+    this.el.addEventListener("pointerup", end); this.el.addEventListener("pointercancel", () => { drag = null; });
+    this.el.addEventListener("keydown", e => {
+      if (this.disabled && this.disabled()) return;
+      const k = e.key;
+      if ((k === "Enter" || k === " ") && this.tap) { this.tap(); e.preventDefault(); return; }
+      const dir = k === "ArrowRight" || k === "ArrowUp" ? 1 : k === "ArrowLeft" || k === "ArrowDown" ? -1 : 0;
+      if (!dir) return; e.preventDefault();
+      if (this.tap && !this.sweep) { this.tap(dir); return; }
+      this.apply(this.get() + dir * this.step);
+    });
   }
-  ax.putImageData(aid, 0, 0);
-  document.getElementById("npMark").style.left = ((Mdl.np - 340) / 380 * 100) + "%";
-}
-
-// ---------- palette + stretch maps ----------
-function divColor(t) { // t in [-1,1]: blue (compressed) .. grey .. orange (stretched)
-  const stops = [[-1, [37, 99, 168]], [-0.5, [122, 166, 214]], [0, [214, 214, 214]], [0.5, [232, 160, 106]], [1, [184, 68, 28]]];
-  t = Math.max(-1, Math.min(1, t));
-  for (let k = 1; k < stops.length; k++) if (t <= stops[k][0]) {
-    const [t0, c0] = stops[k - 1], [t1, c1] = stops[k], f = (t - t0) / (t1 - t0);
-    return c0.map((v, i) => Math.round(v + (c1[i] - v) * f));
+  apply(v) {
+    if (this.wrap) v = ((v - this.min) % (this.max - this.min) + (this.max - this.min)) % (this.max - this.min) + this.min;
+    else v = Math.min(this.max, Math.max(this.min, v));
+    this.set(v); this.draw(); onChange();
   }
-  return stops[4][1];
-}
-function renderMaps() {
-  const { rgb8, smax, smin, clo, dc, viol } = Mdl;
-  const p = document.getElementById("pal"), px = p.getContext("2d"), pid = px.createImageData(NC, NU);
-  const d = document.getElementById("dist"), dx = d.getContext("2d"), did = dx.createImageData(NC, NU);
-  const d2 = document.getElementById("dist2"), dx2 = d2.getContext("2d"), did2 = dx2.createImageData(NC, NU);
-  const i0 = Math.round(-clo / dc * (NC - 1));
-  for (let j = 0; j < NU; j++) for (let i = 0; i < NC; i++) {
-    const n = j * NC + i, row = NU - 1 - j, q = 4 * (row * NC + i);
-    pid.data.set([rgb8[3 * n], rgb8[3 * n + 1], rgb8[3 * n + 2], 255], q);
-    did.data.set([...divColor(Math.log2(Math.max(smax[n], 1e-6)) / 2), 255], q);
-    did2.data.set([...divColor(Math.log2(Math.max(smin[n], 1e-6)) / 2), 255], q);
-    if (i === i0 && (j & 1)) { pid.data.set([255, 255, 255, 255], q); }
-    if (S.mode !== "natural" && viol[j] && i < 4) { did.data.set([200, 30, 30, 255], q); did2.data.set([200, 30, 30, 255], q); }
-  }
-  px.putImageData(pid, 0, 0); dx.putImageData(did, 0, 0); dx2.putImageData(did2, 0, 0);
-}
-
-// ---------- 3-D view ----------
-const v3 = document.getElementById("v3"); let yaw = 0.7, pitch = 0.32;
-const cubeEdges = (() => {
-  const P = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1],[1,1,1]], E = [];
-  for (let a = 0; a < 8; a++) for (let b = a + 1; b < 8; b++) {
-    const diff = P[a].reduce((s, v, k) => s + Math.abs(v - P[b][k]), 0);
-    if (diff === 1) { const pts = []; for (let t = 0; t <= 24; t++) pts.push(lin2lab(P[a].map((v, k) => v + (P[b][k] - v) * t / 24))); E.push(pts); }
-  }
-  return E;
-})();
-function render3D() {
-  const dpr = Math.min(2, window.devicePixelRatio || 1), W = v3.clientWidth || 400;
-  if (v3.width !== Math.round(W * dpr)) { v3.width = v3.height = Math.round(W * dpr); }
-  const ctx = v3.getContext("2d"), Wp = v3.width, sc = Wp * 0.86, cx = Wp / 2, cy = Wp / 2;
-  const cs = getComputedStyle(document.documentElement), line = cs.getPropertyValue("--line").trim(), ink = cs.getPropertyValue("--muted").trim();
-  ctx.clearRect(0, 0, Wp, Wp);
-  const cyw = Math.cos(yaw), syw = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
-  const proj = (L, a, b) => { const x = a, y = L - 0.5, z = b; const X = x * cyw - z * syw, Z = x * syw + z * cyw;
-    const Y = y * cp - Z * sp, D = y * sp + Z * cp; return [cx + X * sc, cy - Y * sc, D]; };
-  ctx.lineWidth = dpr; ctx.strokeStyle = line;
-  for (const e of cubeEdges) { ctx.beginPath(); e.forEach((p, k) => { const s = proj(p[0], p[1], p[2]); k ? ctx.lineTo(s[0], s[1]) : ctx.moveTo(s[0], s[1]); }); ctx.stroke(); }
-  ctx.strokeStyle = ink; ctx.beginPath(); let s = proj(0, 0, 0); ctx.moveTo(s[0], s[1]); s = proj(1, 0, 0); ctx.lineTo(s[0], s[1]); ctx.stroke();
-  ctx.fillStyle = ink; ctx.font = `${11 * dpr}px IBM Plex Mono, monospace`; ctx.fillText("L=1", s[0] + 4 * dpr, s[1]); s = proj(0, 0, 0); ctx.fillText("L=0", s[0] + 4 * dpr, s[1] + 10 * dpr);
-  const { labC, labR, rgb8, clip } = Mdl, pts = [];
-  for (let j = 0; j < NU; j += 4) for (let i = 0; i < NC; i += 4) {
-    const n = j * NC + i;
-    const p = proj(labC[3 * n], labC[3 * n + 1], labC[3 * n + 2]);
-    pts.push([p[2], p[0], p[1], `rgb(${rgb8[3 * n]},${rgb8[3 * n + 1]},${rgb8[3 * n + 2]})`, false]);
-    if (clip[n]) { const q = proj(labR[3 * n], labR[3 * n + 1], labR[3 * n + 2]); pts.push([q[2], q[0], q[1], ink, true]); }
-  }
-  pts.sort((a, b) => b[0] - a[0]);
-  const r = 3.2 * dpr;
-  for (const p of pts) {
-    ctx.beginPath(); ctx.arc(p[1], p[2], p[4] ? r * 0.8 : r, 0, 2 * Math.PI);
-    if (p[4]) { ctx.strokeStyle = p[3]; ctx.lineWidth = 0.7 * dpr; ctx.stroke(); } else { ctx.fillStyle = p[3]; ctx.fill(); }
+  draw() {
+    const c = this.cv.getContext("2d"), W = this.cv.width, r = W / 2, d = this.dpr;
+    c.clearRect(0, 0, W, W);
+    c.fillStyle = cssVar("--glass"); c.beginPath(); c.arc(r, r, r - 1, 0, 2 * Math.PI); c.fill();
+    this.paint(c, r, d);
+    this.el.setAttribute("aria-valuetext", this.text());
+    this.el.setAttribute("aria-disabled", String(!!(this.disabled && this.disabled())));
+    this.val.textContent = this.text();
   }
 }
-(() => { let drag = null;
-  v3.addEventListener("pointerdown", e => { drag = [e.clientX, e.clientY, yaw, pitch]; v3.setPointerCapture(e.pointerId); v3.style.cursor = "grabbing"; });
-  v3.addEventListener("pointermove", e => { if (!drag) return; yaw = drag[2] + (e.clientX - drag[0]) * 0.01;
-    pitch = Math.max(-1.4, Math.min(1.4, drag[3] + (e.clientY - drag[1]) * 0.01)); render3D(); });
-  const end = () => { drag = null; v3.style.cursor = "grab"; };
-  v3.addEventListener("pointerup", end); v3.addEventListener("pointercancel", end);
-})();
-
-// ---------- readouts ----------
-function chip(k, v, s, state) { return `<div class="chip" data-state="${state}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`; }
-function renderChips(st) {
-  const m = Mdl, nat = S.mode === "natural", f = x => x >= 10 ? x.toFixed(0) : x.toFixed(1);
-  const iso = x => x > 0.8 && x < 1.25 ? "ok" : x > 0.5 && x < 2 ? "warn" : "bad";
-  let h = chip("Neutral point", m.np.toFixed(0) + " nm", "white-matching wavelength", "info");
-  h += chip("Animal chromatic range", f(m.chromJND) + " JND", "across sRGB gamut, at white", "info");
-  h += chip("Animal luminance range", f(m.lumJND) + " JND", "black (0.2%) to white", "info");
-  if (!nat) {
-    const ok = S.span >= m.spanMin;
-    h += chip("Min hue span to embed", m.spanMin.toFixed(0) + "°", ok ? "met by current span" : `cone needs ruffles over ${Math.round(100 * m.violFrac)}% of luminance`, ok ? "ok" : "bad");
-    h += chip("Peak chroma", "C " + (S.mode === "anchored" ? 2 * m.rho[NU - 1] : m.rho[NU - 1]).toFixed(3), S.mode === "bell" ? "greys tinted to this" : "opposite the grey axis", "info");
-    h += chip("Lightness stretch", "×" + m.kY.toFixed(2), S.auto ? "fitted to display range" : "set by hand", "info");
-  }
-  h += chip("Out of sRGB gamut", Math.round(100 * st.clipFrac) + "%", "of image pixels", st.clipFrac < 0.05 ? "ok" : st.clipFrac < 0.25 ? "warn" : "bad");
-  h += chip("Local stretch, larger", "×" + st.smaxMed.toFixed(2), "median over image", iso(st.smaxMed));
-  h += chip("Local stretch, smaller", "×" + st.sminMed.toFixed(2), "median over image", iso(st.sminMed));
-  document.getElementById("chips").innerHTML = h;
+function gauge(c, r, d, f, label) {
+  const a0 = 0.75 * Math.PI, a1 = 2.25 * Math.PI, R = r - 9 * d;
+  c.lineCap = "round"; c.lineWidth = 6 * d;
+  c.strokeStyle = cssVar("--track"); c.beginPath(); c.arc(r, r, R, a0, a1); c.stroke();
+  c.strokeStyle = cssVar("--ink"); c.beginPath(); c.arc(r, r, R, a0, a0 + f * (a1 - a0)); c.stroke();
+  const a = a0 + f * (a1 - a0); c.fillStyle = cssVar("--ink"); c.beginPath(); c.arc(r + R * Math.cos(a), r + R * Math.sin(a), 5 * d, 0, 2 * Math.PI); c.fill();
+  c.fillStyle = cssVar("--ink"); c.font = `500 ${11 * d}px IBM Plex Mono, monospace`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(label, r, r);
+}
+const lightWord = v => v < 0.5 ? "night" : v < 1.5 ? "dusk" : v < 3 ? "overcast" : "day";
+const dials = [
+  new Dial("d-species", {
+    get: () => S.sp, set: v => { S.sp = v; }, tap: (dir = 1) => { S.sp = (S.sp + dir + SPECIES.length) % SPECIES.length; dials[0].draw(); onChange(true); },
+    text: () => SPECIES[S.sp].name,
+    paint(c, r, d) {
+      const n = SPECIES.length, R = r - 9 * d;
+      for (let k = 0; k < n; k++) { const a = -Math.PI / 2 + (k - (n - 1) / 2) * 0.5;
+        c.fillStyle = k === S.sp ? cssVar("--ink") : cssVar("--track"); c.beginPath(); c.arc(r + R * Math.cos(a), r + R * Math.sin(a), 5 * d, 0, 2 * Math.PI); c.fill(); }
+      c.fillStyle = cssVar("--ink"); c.font = `600 ${13 * d}px IBM Plex Sans, sans-serif`; c.textAlign = "center"; c.textBaseline = "middle";
+      c.fillText(SPECIES[S.sp].name, r, r + 3 * d);
+    },
+  }),
+  new Dial("d-light", {
+    min: 0, max: 5, step: 0.25, sweep: 1.5 * Math.PI, get: () => S.light, set: v => { S.light = v; },
+    disabled: () => S.natural, text: () => lightWord(S.light),
+    paint(c, r, d) { const p = 100 * Math.pow(10, -S.light); gauge(c, r, d, S.light / 5, (p >= 1 ? p.toFixed(0) : p.toPrecision(1)) + "%"); },
+  }),
+  new Dial("d-adapt", {
+    min: 0, max: 1, step: 0.05, sweep: 1.5 * Math.PI, get: () => S.adapt, set: v => { S.adapt = v; },
+    disabled: () => S.natural, text: () => S.adapt < 0.05 ? "world" : S.adapt > 0.95 ? "scene" : Math.round(100 * S.adapt) + "%",
+    paint(c, r, d) { gauge(c, r, d, S.adapt, Math.round(100 * S.adapt) + "%"); },
+  }),
+  new Dial("d-hue", {
+    min: 0, max: 360, step: 5, sweep: 2 * Math.PI, wrap: true, get: () => S.rot, set: v => { S.rot = v; },
+    disabled: () => S.natural, text: () => Math.round(S.rot) + "°",
+    paint(c, r, d) {
+      const R = r - 9 * d, span = F ? F.span : 300;
+      c.lineWidth = 9 * d; c.lineCap = "butt";
+      for (let k = 0; k < 120; k++) {
+        const h = k * 3, rel = ((h - S.rot) % 360 + 360) % 360;
+        c.strokeStyle = rel <= span ? sheetRGB(rel / span, 0.7) : "rgba(255,255,255,0.08)";
+        c.beginPath(); c.arc(r, r, R, h * Math.PI / 180 - 0.03, (h + 3) * Math.PI / 180 + 0.01); c.stroke();
+      }
+      if (M && F) {   // animal neutral point, after von Kries shift
+        const y0 = (0 - S.adapt * cMean - M.clo) / (M.chi - M.clo), a = (S.rot + F.span * Math.min(1, Math.max(0, y0))) * Math.PI / 180;
+        c.strokeStyle = cssVar("--ink"); c.lineWidth = 2 * d; c.beginPath();
+        c.moveTo(r + (R - 8 * d) * Math.cos(a), r + (R - 8 * d) * Math.sin(a)); c.lineTo(r + (R + 5 * d) * Math.cos(a), r + (R + 5 * d) * Math.sin(a)); c.stroke();
+      }
+      c.fillStyle = cssVar("--ink"); c.font = `500 ${10.5 * d}px IBM Plex Mono, monospace`; c.textAlign = "center"; c.textBaseline = "middle";
+      c.fillText(F ? F.span + "°" : "", r, r);
+    },
+  }),
+];
+let rebuildPending = false;
+function onChange(full) {
+  if (rebuildPending) return; rebuildPending = true;
+  requestAnimationFrame(() => {
+    rebuildPending = false;
+    rebuild();
+  });
 }
 
 // ---------- wiring ----------
-const NOTES = {
-  natural: "The literal rendering: cone catches drawn on the blue–yellow plane anchored at 475/575 nm. The mapping sliders don't apply.",
-  bell: "Surface of revolution in OKLab. Hue angle is proportional to c; chroma and lightness come from the noise metric. Exact isometry up to the stretches, wherever the profile allows. Greys take the hue at the neutral point.",
-  anchored: "Same profile, but each luminance circle is shifted so the neutral point sits on the grey axis. Greys stay grey and the visible hue range halves (inscribed angle). The shift costs isometry in the luminance direction away from neutral.",
-};
-function syncUI() {
-  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === S.mode)));
-  document.getElementById("modeNote").textContent = NOTES[S.mode];
-  const nat = S.mode === "natural";
-  document.getElementById("map").disabled = nat;
-  document.querySelectorAll("#mapChecks input").forEach(i => i.disabled = nat);
-  document.getElementById("kY").disabled = nat || S.auto;
-  document.getElementById("kY").closest(".row").style.opacity = (nat || S.auto) ? 0.45 : "";
-  document.getElementById("Lb").closest(".row").style.opacity = (nat || !S.auto) ? 0.45 : "";
-  document.getElementById("capA").textContent = `${document.getElementById("species").selectedOptions[0].text.split(" (")[0]}, ${nat ? "natural" : S.mode === "bell" ? "bell" : "grey-anchored"}`;
-  syncOutputs();
-}
-let pending = false;
-function schedule() { if (pending) return; pending = true; requestAnimationFrame(update); }
-function update() {
-  pending = false;
-  buildModel();
-  if (S.auto && S.mode !== "natural") S.kY = Math.log2(Mdl.kY);
-  syncUI();
-  renderStrips(); renderMaps(); render3D();
-  if (srcData && !live) renderChips(renderAnimal(true));
-}
-buildSliders(document.getElementById("phys"), PHYS);
-buildSliders(document.getElementById("map"), MAP);
-document.getElementById("species").addEventListener("change", e => {
-  const sp = SPECIES[e.target.value]; if (sp) { S.lS = sp.s; S.lL = sp.l; S.lens = sp.lens; } schedule(); });
-document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { S.mode = b.dataset.mode; schedule(); }));
-document.getElementById("rev").addEventListener("change", e => { S.rev = e.target.checked; schedule(); });
-document.getElementById("auto").addEventListener("change", e => { S.auto = e.target.checked; schedule(); });
-function pickSrc(which) { document.querySelectorAll(".src button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.src === which))); }
-document.getElementById("s-scene").addEventListener("click", () => { pickSrc("scene"); setSource(sceneImage()); });
-document.getElementById("s-cam").addEventListener("click", async () => { if (await startCamera()) pickSrc("cam"); });
-document.getElementById("s-flip").addEventListener("click", async () => { facing = facing === "environment" ? "user" : "environment"; await startCamera(); });
-document.getElementById("s-swatch").addEventListener("click", () => { pickSrc("swatch"); setSource(swatchImage()); });
+document.getElementById("b-cam").addEventListener("click", startCamera);
+document.getElementById("b-flip").addEventListener("click", () => { facing = facing === "environment" ? "user" : "environment"; startCamera(); });
+document.getElementById("b-scene").addEventListener("click", () => setStill(sceneImage()));
+document.getElementById("b-chart").addEventListener("click", () => setStill(swatchImage()));
+document.getElementById("b-mode").addEventListener("click", e => {
+  S.natural = !S.natural; e.currentTarget.setAttribute("aria-pressed", String(S.natural)); rebuild();
+});
 document.getElementById("file").addEventListener("change", e => {
   const f = e.target.files && e.target.files[0]; if (!f) return;
   if (f.type.startsWith("video/")) {
-    stopLive(); pickSrc("file"); note("");
+    stopLive(); note("");
     vid.src = URL.createObjectURL(f);
     vid.onloadeddata = () => { vid.play().then(startLoop).catch(err => note("Couldn't play that clip: " + err.name)); };
-    return;
+  } else {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, Math.sqrt(400000 / (img.width * img.height))), w = Math.round(img.width * s), h = Math.round(img.height * s);
+      wx.canvas.width = w; wx.canvas.height = h; wx.drawImage(img, 0, 0, w, h);
+      setStill(wx.getImageData(0, 0, w, h)); URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(f);
   }
-  const img = new Image(); img.onload = () => {
-    const s = Math.min(1, 720 / img.width, 540 / img.height), w = Math.round(img.width * s), h = Math.round(img.height * s);
-    const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d"); x.drawImage(img, 0, 0, w, h);
-    pickSrc("file"); setSource(x.getImageData(0, 0, w, h)); URL.revokeObjectURL(img.src);
-  };
-  img.src = URL.createObjectURL(f);
   e.target.value = "";
 });
-window.addEventListener("resize", () => { if (Mdl) render3D(); });
-update();
-setSource(sceneImage());
+const cmp = document.getElementById("cmp");
+stage.addEventListener("pointerdown", e => { comparing = true; cmp.hidden = false; if (srcData) show(); e.preventDefault(); });
+const release = () => { if (!comparing) return; comparing = false; cmp.hidden = true; if (srcData) show(); };
+stage.addEventListener("pointerup", release); stage.addEventListener("pointercancel", release); stage.addEventListener("pointerleave", release);
+stage.addEventListener("contextmenu", e => e.preventDefault());
+
+rebuild();
+setStill(sceneImage());
 </script>
 </body>
 </html>
