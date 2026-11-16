@@ -66,6 +66,7 @@ a.lab { color: var(--muted); font-size: 12.5px; text-decoration: none; border-bo
   <label class="file" for="file">Photo or clip…</label>
   <input type="file" id="file" accept="image/*,video/*">
   <span class="sp"></span>
+  <button id="b-rate" type="button" title="Animal-to-human JND exchange rate: range-matched, or pinned 1:1 at a given human JND size">Rate: matched</button>
   <button id="b-mode" type="button" aria-pressed="false" title="Show the literal blue–yellow rendering">Natural</button>
   <a class="lab" href="lab.html">Lab</a>
 </div>
@@ -144,7 +145,8 @@ const CLIP_TOL = 0.10;                              // fraction of the sheet all
 const NB = 64;                                      // transfer-function bins per channel
 const NYc = 256, NYy = 128;                         // sheet colour table
 
-const S = { sp: 0, light: 3, adapt: 0.5, rot: 29, natural: false };
+const S = { sp: 0, light: 3, adapt: 0.5, rot: 29, natural: false, rate: 0 };
+const RATES = [{ label: "Rate: matched" }, { label: "1:1 · J 0.02", J: 0.02 }, { label: "1:1 · J 0.01", J: 0.01 }];
 
 function speciesModel() {
   const sp = SPECIES[S.sp];
@@ -258,8 +260,10 @@ let M = null, F = null;
 function rebuild() {
   M = speciesModel();
   F = fitSheet(M);
+  const Jr = RATES[S.rate].J;
+  if (Jr) F = { ...F, Lb: 0.05, R: M.Tc * Jr / (F.span * Math.PI / 180), Jr, window: Math.min(1, (F.Lw - 0.05) / Jr / M.TY) };
   buildSheet(M, F);
-  rateC = F.Hc / M.Tc; rateY = F.HY / M.TY;
+  rateC = Jr ? 1 : F.Hc / M.Tc; rateY = Jr ? 1 : F.HY / M.TY;
   updateTransfers();
   for (const d of dials) d.draw();
   updateInfo();
@@ -270,6 +274,7 @@ function updateInfo() {
   const nm = SPECIES[S.sp].name.toLowerCase();
   document.getElementById("info").textContent = S.natural
     ? `Literal ${nm} cone catches on the blue–yellow plane · hold to compare`
+    : F.Jr ? `1:1 at J = ${F.Jr} · lightness window = ${Math.round(100 * F.window)}% of the ${nm}'s range · peak chroma ${F.R.toFixed(3)} · hold to compare` + (fpsTxt ? ` · ${fpsTxt}` : "")
     : `1 ${nm} colour JND → ${rateC.toFixed(1)} of yours · lightness → ${rateY.toFixed(2)} · ${M.Tc.toFixed(0)}×${M.TY.toFixed(0)} JNDs · hold to compare` + (fpsTxt ? ` · ${fpsTxt}` : "");
 }
 
@@ -313,6 +318,21 @@ function processFrame(dt) {
   }
 }
 function updateTransfers() {
+  if (F && F.Jr) {   // pinned 1:1: colour linear; lightness is a fixed-gain window that adaptation slides
+    for (let i = 0; i <= NB; i++) TC[i] = i / NB;
+    const Wj = (F.Lw - F.Lb) / F.Jr, T = M.TY, tk = new Float64Array(NB + 1);
+    for (let i = 0; i < NB; i++) tk[i + 1] = tk[i] + M.wY[i] * T;
+    let centre;
+    if (Wj >= T) centre = T / 2;
+    else {
+      let acc = 0, m = 0; while (m < NB - 1 && acc + histY[m] < 0.5) acc += histY[m++];
+      const tMed = tk[m] + (tk[m + 1] - tk[m]) * Math.min(1, (0.5 - acc) / Math.max(histY[m], 1e-9));
+      centre = (1 - S.adapt) * (T - Wj / 2) + S.adapt * tMed;     // world: exposed for white; scene: centred on median
+      centre = Math.min(T - Wj / 2, Math.max(Wj / 2, centre));
+    }
+    for (let i = 0; i <= NB; i++) TYf[i] = Math.min(1, Math.max(0, 0.5 + (tk[i] - centre) / Wj));
+    return;
+  }
   // local gain may rise only until one animal JND equals one human JND (noise floor),
   // unless the long-term exchange rate already exceeds that
   transfer(wC, histC, S.adapt, Math.max(1, 1 / rateC), TC);
@@ -543,6 +563,10 @@ document.getElementById("b-cam").addEventListener("click", startCamera);
 document.getElementById("b-flip").addEventListener("click", () => { facing = facing === "environment" ? "user" : "environment"; startCamera(); });
 document.getElementById("b-scene").addEventListener("click", () => setStill(sceneImage()));
 document.getElementById("b-chart").addEventListener("click", () => setStill(swatchImage()));
+document.getElementById("b-rate").addEventListener("click", e => {
+  S.rate = (S.rate + 1) % RATES.length; e.currentTarget.textContent = RATES[S.rate].label;
+  e.currentTarget.setAttribute("aria-pressed", String(S.rate > 0)); rebuild();
+});
 document.getElementById("b-mode").addEventListener("click", e => {
   S.natural = !S.natural; e.currentTarget.setAttribute("aria-pressed", String(S.natural)); rebuild();
 });
