@@ -11,6 +11,12 @@ Each species needs seven numbers. This document explains how they were found, ho
 | Chromatic Weber fraction | ω | Chromatic JND count; shape of the colour space |
 | Luminance Weber fraction | ω_Y | Luminance JND count; shape of the colour space |
 | Colour-vision light limit | Y_fail | Calibrates the photon-noise knee Y₀ and the Light dial |
+| Rod peak wavelength | λ_R | Rod catches; the Purkinje shift |
+| Rod sensitivity vs cones | G_R | Where rods take over brightness |
+| Rod Weber ratio | k_R | How coarse rod-based brightness discrimination is |
+| Rod saturation | Y_sat | Where rods drop out in bright light |
+
+The rod parameters are explained in [Rods](rods.md).
 
 ## Where the evidence comes from
 

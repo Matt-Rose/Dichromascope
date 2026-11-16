@@ -13,6 +13,9 @@ The cat is the default species in Dichromascope and, awkwardly, the least well c
 | Chromatic Weber fraction | 0.05 | D | Literature default |
 | Colour-vision light limit | 0.02 cd/m² | D | Borrowed from horse and human |
 | Neutral point | model 500 nm, behaviour — | — | Not measured |
+| λ_R (rods) | 501 nm | B | Guenther & Zrenner 1993 |
+| Rod sensitivity vs cones | 5000× | D | Human ~1000×, cats ~5× more sensitive than humans in dim light (Kang et al. 2009) |
+| Rod Weber ratio, saturation | 3×, 100 cd/m² | D | Human-derived; see [Rods](../rods.md) |
 
 ## Evidence
 

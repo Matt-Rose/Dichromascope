@@ -30,6 +30,7 @@ The [docs](docs/README.md) explain the model, the exchange rate between animal a
 
 - [Model](docs/model.md): cone templates, receptor noise, photon noise and the geometry of the animal's colour space
 - [Exchange rate](docs/exchange-rate.md): Laughlin, range matching, the 1:1 alternative and adaptation
+- [Rods](docs/rods.md): dim light, the Purkinje shift, grain, and the open question of rod colour
 - [Parameters](docs/parameters.md): evidence, grading, the ratio principle and the light-level calibration
 - Species: [cat](docs/species/cat.md), [dog](docs/species/dog.md), [horse](docs/species/horse.md)
 - [References](docs/references.md)
@@ -53,7 +54,7 @@ The Lab also shows stretch maps (the singular values of the Jacobian from animal
 - **Discrimination:** receptor-noise-limited model (Vorobyev & Osorio 1998), with photon noise `e(Y) = ω·√(1 + Y₀/Y)`.
 - **Human side:** OKLab, with 1 JND taken as 0.02.
 
-Parameters come from the literature with confidence grades; the chromatic Weber fractions and most cat values are still assumptions (#3). The adaptation time constant is a rough guess. Rods are ignored (#1).
+Parameters come from the literature with confidence grades; the chromatic Weber fractions and most cat values are still assumptions (#3). The adaptation time constant is a rough guess. Rods contribute to brightness in dim light (Purkinje shift, grain at night) but not to colour; see [Rods](docs/rods.md) and #1.
 
 ## Files
 

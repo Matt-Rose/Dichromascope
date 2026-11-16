@@ -20,6 +20,14 @@ References are grouped by topic. Entries marked † were identified through abst
 - Pizer, S. M. et al. (1987). Adaptive histogram equalization and its variations. *Computer Vision, Graphics, and Image Processing* 39, 355–368.
 - Vorobyev, M. & Osorio, D. (1998). Receptor noise as a determinant of colour thresholds. *Proceedings of the Royal Society B* 265, 351–358.
 
+## Rods and dim light
+
+- Aguilar, M. & Stiles, W. S. (1954). Saturation of the rod mechanism of the retina at high levels of stimulation. *Optica Acta* 1, 59–65.
+- Schwartz, S. H. (2009). *Visual Perception: A Clinical Orientation*, 4th edn. McGraw-Hill. Mesopic range figures. †
+- Sharpe, L. T., Fach, C., Nordby, K. & Stockman, A. (1989). The incremental threshold of the rod visual system and Weber's law. *Science* 244, 354–356.
+- Sharpe, L. T., Fach, C. C. & Stockman, A. (1992). The field adaptation of the human rod visual system. *Journal of Physiology* 445, 319–343.
+- Smith, V. C. & Pokorny, J. (1977). Large-field trichromacy in protanopes and deuteranopes. *Journal of the Optical Society of America* 67, 213–220. † (pages)
+
 ## Horse
 
 - Blackmore, T. L., Foster, T. M., Sumpter, C. E. & Temple, W. (2008). An investigation of colour discrimination with horses (*Equus caballus*). *Behavioural Processes* 78, 387–396. †

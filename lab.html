@@ -200,7 +200,7 @@ const K = {"basis":[[0.32746,0.33186,0.34068],[0.32375,0.32969,0.34656],[0.31344
 const J = 0.02, EPS = 0.02, YMIN = 0.002, UMIN = Math.log(YMIN);
 const NC = 160, NU = 128;
 // Physiological parameters: edit species.json, then run tools/sync_species.py
-/*SPECIES-DATA-BEGIN*/ const SPECIES_DATA = {"cat": {"name": "Cat", "s": 450, "l": 556, "lens": 380, "eta": 0.15, "w": 0.05, "wY": 0.25, "Yfail": 0.02}, "dog": {"name": "Dog", "s": 429, "l": 555, "lens": 390, "eta": 0.11, "w": 0.05, "wY": 0.245, "Yfail": 0.02}, "horse": {"name": "Horse", "s": 428, "l": 539, "lens": 380, "eta": 0.17, "w": 0.05, "wY": 0.435, "Yfail": 0.02}}; /*SPECIES-DATA-END*/
+/*SPECIES-DATA-BEGIN*/ const SPECIES_DATA = {"cat": {"name": "Cat", "s": 450, "l": 556, "lens": 380, "eta": 0.15, "w": 0.05, "wY": 0.25, "Yfail": 0.02, "lR": 501, "rodGain": 5000, "rodK": 3, "rodSat": 100}, "dog": {"name": "Dog", "s": 429, "l": 555, "lens": 390, "eta": 0.11, "w": 0.05, "wY": 0.245, "Yfail": 0.02, "lR": 508, "rodGain": 1000, "rodK": 3, "rodSat": 100}, "horse": {"name": "Horse", "s": 428, "l": 539, "lens": 380, "eta": 0.17, "w": 0.05, "wY": 0.435, "Yfail": 0.02, "lR": 500, "rodGain": 1000, "rodK": 3, "rodSat": 100}}; /*SPECIES-DATA-END*/
 const SPECIES = SPECIES_DATA;
 
 // ---------- small linear algebra ----------

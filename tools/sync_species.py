@@ -19,6 +19,8 @@ compact = {
         "lens": v(sp, "lens_cutoff_nm"), "eta": v(sp, "S_cone_fraction"),
         "w": v(sp, "weber_chromatic_L"), "wY": v(sp, "weber_luminance"),
         "Yfail": v(sp, "colour_limit_cd_m2"),
+        "lR": v(sp, "lambda_R_nm"), "rodGain": v(sp, "rod_sensitivity_vs_cones"),
+        "rodK": v(sp, "rod_weber_ratio"), "rodSat": v(sp, "rod_saturation_cd_m2"),
     }
     for key, sp in data["species"].items()
 }

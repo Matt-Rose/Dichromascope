@@ -136,10 +136,14 @@ function d65(w) { const x = (w - 340) / 5, i = Math.max(0, Math.min(K.d65.length
 // ---------- physiology ----------
 const J = 0.02, EPS = 0.02, YMIN = 0.002, UMIN = Math.log(YMIN);
 // Physiological parameters: edit species.json, then run tools/sync_species.py
-/*SPECIES-DATA-BEGIN*/ const SPECIES_DATA = {"cat": {"name": "Cat", "s": 450, "l": 556, "lens": 380, "eta": 0.15, "w": 0.05, "wY": 0.25, "Yfail": 0.02}, "dog": {"name": "Dog", "s": 429, "l": 555, "lens": 390, "eta": 0.11, "w": 0.05, "wY": 0.245, "Yfail": 0.02}, "horse": {"name": "Horse", "s": 428, "l": 539, "lens": 380, "eta": 0.17, "w": 0.05, "wY": 0.435, "Yfail": 0.02}}; /*SPECIES-DATA-END*/
+/*SPECIES-DATA-BEGIN*/ const SPECIES_DATA = {"cat": {"name": "Cat", "s": 450, "l": 556, "lens": 380, "eta": 0.15, "w": 0.05, "wY": 0.25, "Yfail": 0.02, "lR": 501, "rodGain": 5000, "rodK": 3, "rodSat": 100}, "dog": {"name": "Dog", "s": 429, "l": 555, "lens": 390, "eta": 0.11, "w": 0.05, "wY": 0.245, "Yfail": 0.02, "lR": 508, "rodGain": 1000, "rodK": 3, "rodSat": 100}, "horse": {"name": "Horse", "s": 428, "l": 539, "lens": 380, "eta": 0.17, "w": 0.05, "wY": 0.435, "Yfail": 0.02, "lR": 500, "rodGain": 1000, "rodK": 3, "rodSat": 100}}; /*SPECIES-DATA-END*/
 const SPECIES = ["cat", "dog", "horse"].map(k => SPECIES_DATA[k]);
 const TAU = 1.0;                                    // adaptation time constant (s), rough
 const CLIP_TOL = 0.10;                              // fraction of the sheet allowed to clip
+const REF_LIGHT = 3.5;                              // daylight reference, log10 cd/m2, for the colour exchange rate
+const GRAIN = 0.35;                                 // receptor-noise grain, in animal lightness JNDs (sd)
+const NOISE_TAB = (() => { const t = new Float32Array(65536); for (let i = 0; i < t.length; i++) t[i] = (Math.random() + Math.random() + Math.random() - 1.5) * 2; return t; })();
+let noiseOff = 0;
 const NB = 64;                                      // transfer-function bins per channel
 const NYc = 256, NYy = 128;                         // sheet colour table
 
@@ -148,11 +152,12 @@ const RATES = [{ label: "Matched" }, { label: "1:1 · J 0.02", J: 0.02 }, { labe
 
 function speciesModel() {
   const sp = SPECIES[S.sp];
-  const sS = w => sens(w, sp.s, sp.lens), sL = w => sens(w, sp.l, sp.lens);
-  const Q = [[0, 0, 0], [0, 0, 0]];
+  const sS = w => sens(w, sp.s, sp.lens), sL = w => sens(w, sp.l, sp.lens), sR = w => sens(w, sp.lR, sp.lens);
+  // rows: short cone, long cone, rod; each white-normalised (a white surface gives 1)
+  const Q = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
   for (let k = 0; k < K.basis.length; k++) {
-    const w = 380 + 5 * k, D = d65(w), b = K.basis[k], a = sS(w) * D, c = sL(w) * D;
-    for (let j = 0; j < 3; j++) { Q[0][j] += a * b[j]; Q[1][j] += c * b[j]; }
+    const w = 380 + 5 * k, D = d65(w), b = K.basis[k], cat = [sS(w) * D, sL(w) * D, sR(w) * D];
+    for (let r = 0; r < 3; r++) for (let j = 0; j < 3; j++) Q[r][j] += cat[r] * b[j];
   }
   for (const r of Q) { const s = r[0] + r[1] + r[2]; r[0] /= s; r[1] /= s; r[2] /= s; }
   let clo = 1e9, chi = -1e9;
@@ -162,19 +167,26 @@ function speciesModel() {
     const c = Math.log((qs + EPS) / (ql + EPS)); clo = Math.min(clo, c); chi = Math.max(chi, c);
   }
   const ec = Math.hypot(sp.w * Math.sqrt((1 - sp.eta) / sp.eta), sp.w), eY = sp.wY;
-  // photon-noise knee from the colour-vision light limit: Y0 = (Tc^2 - 1) * Yfail  (docs/parameters.md)
+  // cone photon-noise knee from the colour-vision light limit: Y0 = (Tc^2 - 1) * Yfail  (docs/parameters.md)
   const TcBright = (chi - clo) / ec, Y0abs = (TcBright * TcBright - 1) * sp.Yfail;
-  const Y0 = Y0abs / Math.pow(10, S.light);          // S.light = log10 of white luminance, cd/m2
-  const Gu = u => 1 / Math.sqrt(1 + Y0 * Math.exp(-u));
+  const Ywhite = Math.pow(10, S.light);              // S.light = log10 of white luminance, cd/m2
+  const Y0r = Y0abs / sp.rodGain;                    // rod knee (rods far more sensitive)
+  // Weber fractions with photon noise; rods also saturate in bright light (docs/rods.md)
+  const eCone = Y => eY * Math.sqrt(1 + Y0abs / Y);
+  const eRod = Y => sp.rodK * eY * Math.sqrt(1 + Y0r / Y) * (1 + (Y / sp.rodSat) ** 2);
+  const eLum = Y => 1 / Math.sqrt(1 / eCone(Y) ** 2 + 1 / eRod(Y) ** 2);   // optimal rod+cone pooling
+  const Gc = u => 1 / Math.sqrt(1 + Y0abs / (Ywhite * Math.exp(u)));     // cone chromatic factor
+  // rod share of the brightness signal at the adaptation level (mid-grey, 18% of white)
+  const Ya = 0.18 * Ywhite, pc = 1 / eCone(Ya) ** 2, pr = 1 / eRod(Ya) ** 2, rodW = pr / (pc + pr);
   // luminance: long-term (range-matched) weights per bin, and cumulative for inverse lookup
   const wY = new Float64Array(NB), uB = i => UMIN + (-UMIN) * (i + 0.5) / NB;
-  let TY = 0; for (let i = 0; i < NB; i++) { wY[i] = Gu(uB(i)); TY += wY[i] * (-UMIN) / NB / eY; }
+  let TY = 0; for (let i = 0; i < NB; i++) { wY[i] = 1 / eLum(Ywhite * Math.exp(uB(i))); TY += wY[i] * (-UMIN) / NB; }
   const sw = wY.reduce((a, b) => a + b, 0); for (let i = 0; i < NB; i++) wY[i] /= sw;
-  // G as a function of range-matched lightness position yY
+  // cone chromatic factor as a function of range-matched lightness position yY
   const cum = new Float64Array(NB + 1); for (let i = 0; i < NB; i++) cum[i + 1] = cum[i] + wY[i];
-  const gOfY = yY => { let i = 0; while (i < NB - 1 && cum[i + 1] < yY) i++; return Gu(uB(i)); };
-  const Tc = (chi - clo) * Gu(0) / ec;
-  return { Q, clo, chi, ec, eY, Y0, Y0abs, Gu, wY, TY, Tc, gOfY };
+  const gOfY = yY => { let i = 0; while (i < NB - 1 && cum[i + 1] < yY) i++; return Gc(uB(i)); };
+  const Tc = (chi - clo) * Gc(0) / ec;
+  return { Q, clo, chi, ec, eY, Y0abs, Y0r, rodW, wY, TY, Tc, gOfY };
 }
 
 // ---------- gamut table and sheet fit ----------
@@ -258,12 +270,15 @@ const wC = new Float64Array(NB).fill(1 / NB);
 // ---------- model state ----------
 let M = null, F = null;
 function rebuild() {
+  // The colour exchange rate is fixed in daylight (REF_LIGHT), so dimmer light shows up as fading colour
+  // instead of being re-stretched to fill the gamut. Lightness re-matches at each level (light adaptation).
+  const keep = S.light; S.light = REF_LIGHT; const Mref = speciesModel(); S.light = keep;
   M = speciesModel();
-  F = fitSheet(M);
+  F = fitSheet(Mref);
   const Jr = RATES[S.rate].J;
-  if (Jr) F = { ...F, Lb: 0.05, R: M.Tc * Jr / (F.span * Math.PI / 180), Jr, window: Math.min(1, (F.Lw - 0.05) / Jr / M.TY) };
+  if (Jr) F = { ...F, Lb: 0.05, R: Mref.Tc * Jr / (F.span * Math.PI / 180), Jr, window: Math.min(1, (F.Lw - 0.05) / Jr / M.TY) };
   buildSheet(M, F);
-  rateC = Jr ? 1 : F.Hc / M.Tc; rateY = Jr ? 1 : F.HY / M.TY;
+  rateC = Jr ? 1 : F.Hc / Mref.Tc; rateY = Jr ? 1 : F.HY / M.TY;
   updateTransfers();
   for (const d of dials) d.draw();
   updateInfo();
@@ -275,7 +290,7 @@ function updateInfo() {
   document.getElementById("info").textContent = S.natural
     ? `Literal ${nm} cone catches on the blue–yellow plane · hold to compare`
     : F.Jr ? `1:1 at J = ${F.Jr} · lightness window = ${Math.round(100 * F.window)}% of the ${nm}'s range · peak chroma ${F.R.toFixed(3)} · hold to compare` + (fpsTxt ? ` · ${fpsTxt}` : "")
-    : `1 ${nm} colour JND → ${rateC.toFixed(1)} of yours · lightness → ${rateY.toFixed(2)} · ${M.Tc.toFixed(0)}×${M.TY.toFixed(0)} JNDs · hold to compare` + (fpsTxt ? ` · ${fpsTxt}` : "");
+    : `1 ${nm} colour JND → ${rateC.toFixed(1)} of yours · lightness → ${rateY.toFixed(2)} · ${M.Tc.toFixed(0)}×${M.TY.toFixed(0)} JNDs` + (M.rodW > 0.02 ? ` · rods ${Math.round(100 * M.rodW)}% of brightness` : "") + ` · hold to compare` + (fpsTxt ? ` · ${fpsTxt}` : "");
 }
 
 // ---------- frame processing ----------
@@ -285,9 +300,11 @@ let srcData = null, outData = null, comparing = false;
 function processFrame(dt) {
   const W = srcData.width, H = srcData.height, n = W * H, src = srcData.data, o = outData.data;
   const Q = M.Q, q00 = Q[0][0], q01 = Q[0][1], q02 = Q[0][2], q10 = Q[1][0], q11 = Q[1][1], q12 = Q[1][2];
+  const q20 = Q[2][0], q21 = Q[2][1], q22 = Q[2][2], wr = M.rodW, wc = 1 - wr;
   const A = K.A, P = K.LMS2RGB;
   const clo = M.clo, kC = NB / (M.chi - M.clo), kU = NB / (-UMIN), shift = S.adapt * cMean;
   const hc = new Float64Array(NB), hy = new Float64Array(NB); let cs = 0, cn = 0, ns = 0;
+  const gs = GRAIN / Math.max(M.TY, 0.5); if (dt != null) noiseOff = (Math.random() * 65536) | 0;
   for (let p = 0; p < n; p++) {
     const r = DEC[src[4 * p]], g = DEC[src[4 * p + 1]], b = DEC[src[4 * p + 2]];
     const qs = q00 * r + q01 * g + q02 * b, ql = q10 * r + q11 * g + q12 * b;
@@ -300,9 +317,12 @@ function processFrame(dt) {
     }
     const c0 = Math.log((qs + EPS) / (ql + EPS));
     let xc = (c0 - shift - clo) * kC; xc = xc < 0 ? 0 : xc > NB - 1e-6 ? NB - 1e-6 : xc;
-    let xu = (Math.log(ql > YMIN ? ql : YMIN) - UMIN) * kU; xu = xu < 0 ? 0 : xu > NB - 1e-6 ? NB - 1e-6 : xu;
+    const qr = q20 * r + q21 * g + q22 * b;
+    let xu = (wc * Math.log(ql > YMIN ? ql : YMIN) + wr * Math.log(qr > YMIN ? qr : YMIN) - UMIN) * kU; xu = xu < 0 ? 0 : xu > NB - 1e-6 ? NB - 1e-6 : xu;
     const ic = xc | 0, iu = xu | 0;
-    const yc = TC[ic] + (TC[ic + 1] - TC[ic]) * (xc - ic), yY = TYf[iu] + (TYf[iu + 1] - TYf[iu]) * (xu - iu);
+    const yc = TC[ic] + (TC[ic + 1] - TC[ic]) * (xc - ic);
+    let yY = TYf[iu] + (TYf[iu + 1] - TYf[iu]) * (xu - iu) + gs * NOISE_TAB[(p + noiseOff) & 65535];
+    yY = yY < 0 ? 0 : yY > 1 ? 1 : yY;
     const fx = yc * (NYc - 1), fy = yY * (NYy - 1), i = Math.min(NYc - 2, fx | 0), j = Math.min(NYy - 2, fy | 0), ax = fx - i, ay = fy - j;
     const a0 = 3 * (j * NYc + i), a1 = a0 + 3, a2 = a0 + 3 * NYc, a3 = a2 + 3;
     for (let k = 0; k < 3; k++)
@@ -505,7 +525,7 @@ function gauge(c, r, d, f, label) {
   const a = a0 + f * (a1 - a0); c.fillStyle = cssVar("--ink"); c.beginPath(); c.arc(r + R * Math.cos(a), r + R * Math.sin(a), 5 * d, 0, 2 * Math.PI); c.fill();
   c.fillStyle = cssVar("--ink"); c.font = `500 ${(label.length > 5 ? 9 : 11) * d}px IBM Plex Mono, monospace`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(label, r, r);
 }
-const lightWord = v => v >= 3.5 ? "sun" : v >= 2.5 ? "overcast" : v >= 1.5 ? "indoor" : v >= 0 ? "dusk" : v >= -1.3 ? "twilight" : "moon";
+const lightWord = v => v >= 3.5 ? "sun" : v >= 2.5 ? "overcast" : v >= 1.5 ? "indoor" : v >= 0 ? "dusk" : v >= -1.3 ? "twilight" : v >= -2.5 ? "moon" : "stars";
 function fmtLum(v) { const x = Math.pow(10, v); return x >= 1000 ? (x / 1000).toFixed(x >= 10000 ? 0 : 1) + "k" : x >= 1 ? x.toFixed(0) : x.toPrecision(1); }
 const dials = [
   new Dial("d-species", {
@@ -520,9 +540,9 @@ const dials = [
     },
   }),
   new Dial("d-light", {
-    min: -2, max: 4.5, step: 0.25, sweep: 1.5 * Math.PI, get: () => S.light, set: v => { S.light = v; },
+    min: -4, max: 4.5, step: 0.25, sweep: 1.5 * Math.PI, get: () => S.light, set: v => { S.light = v; },
     disabled: () => S.natural, text: () => fmtLum(S.light) + " cd/m²",
-    paint(c, r, d) { gauge(c, r, d, (S.light + 2) / 6.5, lightWord(S.light)); },
+    paint(c, r, d) { gauge(c, r, d, (S.light + 4) / 8.5, lightWord(S.light)); },
   }),
   new Dial("d-adapt", {
     min: 0, max: 1, step: 0.05, sweep: 1.5 * Math.PI, get: () => S.adapt, set: v => { S.adapt = v; },

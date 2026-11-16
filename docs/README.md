@@ -8,6 +8,7 @@ Start with **Model** if you want the pipeline, **Exchange rate** if you want to 
 |---|---|
 | [Model](model.md) | Cone templates, spectral upsampling, the receptor-noise metric, photon noise, and the geometry of the animal's colour space |
 | [Exchange rate](exchange-rate.md) | How animal discriminations are mapped onto human ones: range matching, Laughlin's efficient coding, the 1:1 alternative, adaptation and its noise cap |
+| [Rods](rods.md) | Dim light: rods in the brightness channel, the Purkinje shift, grain, and why rods might (or might not) add a colour dimension |
 | [Parameters](parameters.md) | How the physiological parameters were found, the grading scheme, the ratio principle, and the light-level calibration |
 | [Cat](species/cat.md) · [Dog](species/dog.md) · [Horse](species/horse.md) | Per-species evidence, values chosen, and open questions |
 | [References](references.md) | Full bibliography |

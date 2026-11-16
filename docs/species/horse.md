@@ -13,6 +13,9 @@ The horse is the best-studied of the three species for colour vision, largely th
 | Chromatic Weber fraction | 0.05 | D | Literature default |
 | Colour-vision light limit | 0.02 cd/m² (0.02–0.08) | B | Roth, Balkenius & Kelber 2008, two horses |
 | Neutral point | model 480 nm, behaviour ~480 nm | — | Geisbauer et al. 2004 |
+| λ_R (rods) | ~500 nm | C | Not measured; mammalian rhodopsin varies little |
+| Rod sensitivity vs cones | 1000× | D | Human-derived |
+| Rod Weber ratio, saturation | 3×, 100 cd/m² | D | Human-derived; see [Rods](../rods.md) |
 
 ## Evidence
 

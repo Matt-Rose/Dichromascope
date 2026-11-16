@@ -75,7 +75,7 @@ A sheet like this can be embedded isometrically in OKLab only if the hue span is
 
 ## 7. What the model leaves out
 
-- **Rods.** In twilight, rods plus two cone classes give these animals a genuine third channel ([issue #1](https://github.com/Matt-Rose/Dichromascope/issues/1)).
+- **Rods as a colour dimension.** Rods now contribute to brightness (see [Rods](rods.md)), but not to colour. In twilight, rods plus two cone classes could in principle give these animals a third colour dimension ([issue #1](https://github.com/Matt-Rose/Dichromascope/issues/1)).
 - **Spatial vision.** Cats need large stimuli to discriminate colour at all: they fail below about 20° (Loop & Bruce 1978). Dogs see about three times less fine detail than humans (Lind et al. 2017). The simulation does not blur the image.
 - **Post-receptoral nonlinearity.** Saturation is usually discriminated less well than hue (Danilova & Mollon 2016; Green et al. 2022), which the RNL model does not capture.
 - **The animal's adaptation state beyond what is described in [Exchange rate](exchange-rate.md#adaptation).**

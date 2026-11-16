@@ -11,6 +11,9 @@
 | Chromatic Weber fraction | 0.05 | D | Literature default |
 | Colour-vision light limit | 0.02 cd/m² | D | Borrowed from horse and human |
 | Neutral point | model 486 nm, behaviour ~480 nm | — | Neitz, Geist & Jacobs 1989 |
+| λ_R (rods) | 508 nm | A | Jacobs et al. 1993 |
+| Rod sensitivity vs cones | 1000× | D | Human-derived |
+| Rod Weber ratio, saturation | 3×, 100 cd/m² | D | Human-derived; see [Rods](../rods.md) |
 
 ## Evidence
 
