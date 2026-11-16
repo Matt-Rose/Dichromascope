@@ -4,7 +4,7 @@ Trying to induce physiologically compatible qualia from dichromats in trichromat
 
 See the world through the eyes of a dichromat (a cat, dog or horse). This runs live from your camera, and you can also try photos or video clips.
 
-**Live:** https://matt-rose.github.io/Dichromascope/ (allow camera access; on a phone use the rear camera)
+**Live:** https://dichromascope.rose.org.uk/ (allow camera access; on a phone use the rear camera)
 
 ## The viewer (`index.html`)
 
