@@ -422,7 +422,7 @@ function swatchImage() {
 }
 
 const vid = document.getElementById("vid"), noteEl = document.getElementById("note");
-let stream = null, live = false, facing = "environment", tLast = 0, fpsAvg = 0, fpsTxt = "", frameNo = 0;
+let stream = null, live = false, facing = "environment", tLast = 0, fpsAvg = 0, fpsTxt = "", frameNo = 0, msAvg = 0;
 function note(msg) { noteEl.hidden = !msg; noteEl.textContent = msg || ""; }
 function stopLive() {
   live = false; fpsTxt = "";
@@ -447,9 +447,11 @@ function startLoop() {
       wx.drawImage(vid, 0, 0, w, h);
       srcData = wx.getImageData(0, 0, w, h);
       const t = performance.now(), dt = (t - tLast) / 1000; tLast = t;
-      processFrame(Math.min(dt, 0.5)); show();
+      const p0 = performance.now(); processFrame(Math.min(dt, 0.5)); show(); const pms = performance.now() - p0;
       fpsAvg = fpsAvg ? 0.9 * fpsAvg + 0.1 / Math.max(dt, 1e-3) : 1 / Math.max(dt, 1e-3);
-      if (++frameNo % 15 === 0) { fpsTxt = fpsAvg.toFixed(0) + " fps"; updateInfo(); dials[3].draw(); }
+      msAvg = msAvg ? 0.9 * msAvg + 0.1 * pms : pms;
+      // processing time vs frame interval tells you whether the camera or the maths is the limit
+      if (++frameNo % 15 === 0) { fpsTxt = `${fpsAvg.toFixed(0)} fps · ${msAvg.toFixed(0)} ms/frame · ${w}×${h}`; updateInfo(); dials[3].draw(); }
     }
     if (vid.requestVideoFrameCallback) vid.requestVideoFrameCallback(step); else requestAnimationFrame(step);
   };
@@ -461,7 +463,7 @@ async function startCamera() {
     note("No camera access on this page. Open it over https (the GitHub Pages address) or use “Photo or clip…”."); return;
   }
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }, audio: false });
   } catch (e) { note(`Camera unavailable (${e.name}). Allow camera access for this site, or use “Photo or clip…”.`); return; }
   vid.srcObject = stream; await vid.play();
   note(""); document.getElementById("b-flip").hidden = false;
