@@ -297,46 +297,71 @@ function updateInfo() {
 const stage = document.getElementById("stage"), sx = stage.getContext("2d");
 const work = document.createElement("canvas"), wx = work.getContext("2d", { willReadFrequently: true });
 let srcData = null, outData = null, comparing = false;
+// The per-pixel loops are kept free of data-dependent branches (clamps use Math.min/max, the stats
+// test is arithmetic) and read only locals, so the JavaScript optimiser's assumptions survive changes
+// in scene content. Safari otherwise drops to slower code tiers when the camera moves.
+const HC = new Float64Array(NB), HY = new Float64Array(NB);
 function processFrame(dt) {
-  const W = srcData.width, H = srcData.height, n = W * H, src = srcData.data, o = outData.data;
+  if (S.natural) { processNatural(); return; }
+  const n = srcData.width * srcData.height, src = srcData.data, o = outData.data;
   const Q = M.Q, q00 = Q[0][0], q01 = Q[0][1], q02 = Q[0][2], q10 = Q[1][0], q11 = Q[1][1], q12 = Q[1][2];
   const q20 = Q[2][0], q21 = Q[2][1], q22 = Q[2][2], wr = M.rodW, wc = 1 - wr;
-  const A = K.A, P = K.LMS2RGB;
   const clo = M.clo, kC = NB / (M.chi - M.clo), kU = NB / (-UMIN), shift = S.adapt * cMean;
-  const hc = new Float64Array(NB), hy = new Float64Array(NB); let cs = 0, cn = 0, ns = 0;
+  const xMax = NB - 1e-6, lnYmin = Math.log(YMIN);
+  const dec = DEC, tc = TC, ty = TYf, sheet = SHEET, noise = NOISE_TAB, hc = HC, hy = HY;
+  const nyc = NYc, xs = NYc - 1, ys = NYy - 1, iMax = NYc - 2, jMax = NYy - 2, rowStride = 3 * NYc;
+  hc.fill(0); hy.fill(0);
+  let cs = 0, cn = 0, ns = 0;
   const gs = GRAIN / Math.max(M.TY, 0.5); if (dt != null) noiseOff = (Math.random() * 65536) | 0;
+  const off = noiseOff;
   for (let p = 0; p < n; p++) {
-    const r = DEC[src[4 * p]], g = DEC[src[4 * p + 1]], b = DEC[src[4 * p + 2]];
-    const qs = q00 * r + q01 * g + q02 * b, ql = q10 * r + q11 * g + q12 * b;
-    if (S.natural) {
-      const l0 = A[0][0] * qs + A[0][1] * ql, l1 = A[1][0] * qs + A[1][1] * ql, l2 = A[2][0] * qs + A[2][1] * ql;
-      o[4 * p] = enc(P[0][0] * l0 + P[0][1] * l1 + P[0][2] * l2);
-      o[4 * p + 1] = enc(P[1][0] * l0 + P[1][1] * l1 + P[1][2] * l2);
-      o[4 * p + 2] = enc(P[2][0] * l0 + P[2][1] * l1 + P[2][2] * l2);
-      o[4 * p + 3] = 255; continue;
-    }
+    const p4 = 4 * p;
+    const r = dec[src[p4]], g = dec[src[p4 + 1]], b = dec[src[p4 + 2]];
+    const qs = q00 * r + q01 * g + q02 * b, ql = q10 * r + q11 * g + q12 * b, qr = q20 * r + q21 * g + q22 * b;
     const c0 = Math.log((qs + EPS) / (ql + EPS));
-    let xc = (c0 - shift - clo) * kC; xc = xc < 0 ? 0 : xc > NB - 1e-6 ? NB - 1e-6 : xc;
-    const qr = q20 * r + q21 * g + q22 * b;
-    let xu = (wc * Math.log(ql > YMIN ? ql : YMIN) + wr * Math.log(qr > YMIN ? qr : YMIN) - UMIN) * kU; xu = xu < 0 ? 0 : xu > NB - 1e-6 ? NB - 1e-6 : xu;
+    const xc = Math.min(xMax, Math.max(0, (c0 - shift - clo) * kC));
+    const lu = wc * Math.log(Math.max(ql, YMIN)) + wr * Math.log(Math.max(qr, YMIN));
+    const xu = Math.min(xMax, Math.max(0, (lu - UMIN) * kU));
     const ic = xc | 0, iu = xu | 0;
-    const yc = TC[ic] + (TC[ic + 1] - TC[ic]) * (xc - ic);
-    let yY = TYf[iu] + (TYf[iu + 1] - TYf[iu]) * (xu - iu) + gs * NOISE_TAB[(p + noiseOff) & 65535];
-    yY = yY < 0 ? 0 : yY > 1 ? 1 : yY;
-    const fx = yc * (NYc - 1), fy = yY * (NYy - 1), i = Math.min(NYc - 2, fx | 0), j = Math.min(NYy - 2, fy | 0), ax = fx - i, ay = fy - j;
-    const a0 = 3 * (j * NYc + i), a1 = a0 + 3, a2 = a0 + 3 * NYc, a3 = a2 + 3;
-    for (let k = 0; k < 3; k++)
-      o[4 * p + k] = (SHEET[a0 + k] * (1 - ax) + SHEET[a1 + k] * ax) * (1 - ay) + (SHEET[a2 + k] * (1 - ax) + SHEET[a3 + k] * ax) * ay;
-    o[4 * p + 3] = 255;
-    if ((p & 3) === 0) { hc[ic]++; hy[iu]++; ns++; if (ql > 0.02) { cs += c0; cn++; } }
+    const yc = tc[ic] + (tc[ic + 1] - tc[ic]) * (xc - ic);
+    const yY = Math.min(1, Math.max(0, ty[iu] + (ty[iu + 1] - ty[iu]) * (xu - iu) + gs * noise[(p + off) & 65535]));
+    const fx = yc * xs, fy = yY * ys, i = Math.min(iMax, fx | 0), j = Math.min(jMax, fy | 0), ax = fx - i, ay = fy - j;
+    const bx = 1 - ax, by = 1 - ay;
+    const a0 = 3 * (j * nyc + i), a1 = a0 + 3, a2 = a0 + rowStride, a3 = a2 + 3;
+    o[p4] = (sheet[a0] * bx + sheet[a1] * ax) * by + (sheet[a2] * bx + sheet[a3] * ax) * ay;
+    o[p4 + 1] = (sheet[a0 + 1] * bx + sheet[a1 + 1] * ax) * by + (sheet[a2 + 1] * bx + sheet[a3 + 1] * ax) * ay;
+    o[p4 + 2] = (sheet[a0 + 2] * bx + sheet[a1 + 2] * ax) * by + (sheet[a2 + 2] * bx + sheet[a3 + 2] * ax) * ay;
+    o[p4 + 3] = 255;
+    if ((p & 3) === 0) {                       // regular stride: predictable, not data-dependent
+      hc[ic] += 1; hy[iu] += 1; ns += 1;
+      const lit = +(ql > 0.02); cs += c0 * lit; cn += lit;
+    }
   }
-  if (!S.natural && ns) {
+  if (ns) {
     const k = dt == null ? 1 : 1 - Math.exp(-dt / TAU);
     for (let i = 0; i < NB; i++) { histC[i] += k * (hc[i] / ns - histC[i]); histY[i] += k * (hy[i] / ns - histY[i]); }
     if (cn) cMean += k * (cs / cn - cMean);
     updateTransfers();
   }
 }
+function processNatural() {
+  const n = srcData.width * srcData.height, src = srcData.data, o = outData.data, dec = DEC;
+  const Q = M.Q, q00 = Q[0][0], q01 = Q[0][1], q02 = Q[0][2], q10 = Q[1][0], q11 = Q[1][1], q12 = Q[1][2];
+  const A = K.A, P = K.LMS2RGB;
+  // fold A (2 animal channels -> human LMS) and P (LMS -> linear RGB) into one 3x2 matrix
+  const m = [0, 1, 2].map(row => [0, 1].map(col => P[row][0] * A[0][col] + P[row][1] * A[1][col] + P[row][2] * A[2][col]));
+  const m00 = m[0][0], m01 = m[0][1], m10 = m[1][0], m11 = m[1][1], m20 = m[2][0], m21 = m[2][1];
+  for (let p = 0; p < n; p++) {
+    const p4 = 4 * p;
+    const r = dec[src[p4]], g = dec[src[p4 + 1]], b = dec[src[p4 + 2]];
+    const qs = q00 * r + q01 * g + q02 * b, ql = q10 * r + q11 * g + q12 * b;
+    o[p4] = encFast(m00 * qs + m01 * ql); o[p4 + 1] = encFast(m10 * qs + m11 * ql); o[p4 + 2] = encFast(m20 * qs + m21 * ql);
+    o[p4 + 3] = 255;
+  }
+}
+// sRGB encode via a 4096-entry table (enough for 8-bit output)
+const ENC_TAB = (() => { const t = new Uint8Array(4097); for (let i = 0; i <= 4096; i++) t[i] = enc(i / 4096); return t; })();
+function encFast(v) { return ENC_TAB[Math.min(4096, Math.max(0, (v * 4096 + 0.5) | 0))]; }
 function updateTransfers() {
   if (F && F.Jr) {   // pinned 1:1: colour linear; lightness is a fixed-gain window that adaptation slides
     for (let i = 0; i <= NB; i++) TC[i] = i / NB;
