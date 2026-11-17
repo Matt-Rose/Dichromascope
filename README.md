@@ -37,6 +37,8 @@ The [docs](docs/README.md) explain the model, the exchange rate between animal a
 
 The values are in [`species.json`](species.json); run `python3 tools/sync_species.py` after editing it.
 
+The pages show a build stamp (top bar) and offer a reload when a newer build is published. The stamp is written by a pre-commit hook; enable it once per clone with `git config core.hooksPath .githooks`.
+
 ## The Lab (`lab.html`)
 
 The full slider version for exploring the geometry. It has three mappings:

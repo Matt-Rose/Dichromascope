@@ -1,0 +1,5 @@
+#!/bin/sh
+# Stamp the build time into the pages if either is part of this commit.
+if git diff --cached --name-only | grep -qE '^(index|lab)\.html$'; then
+  python3 tools/stamp_build.py && git add index.html lab.html
+fi
